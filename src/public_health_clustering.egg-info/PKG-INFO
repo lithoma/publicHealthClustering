@@ -1,0 +1,73 @@
+Metadata-Version: 2.4
+Name: public-health-clustering
+Version: 0.1.0
+Summary: Patient-level public health spatial disease clustering platform
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: sqlalchemy>=2.0
+Requires-Dist: psycopg2-binary>=2.9
+Requires-Dist: python-dotenv>=1.0
+
+# Public Health Spatial Disease Clustering Platform
+
+This repository contains the foundation for a patient-level spatial disease
+clustering platform. Milestone 1 provides a minimal Python package, a local
+PostgreSQL/PostGIS service, and the initial database schema. It does not yet
+include ingestion, location resolution, clustering execution, or map
+generation.
+
+## Prerequisites
+
+- Python 3.12 or newer
+- Docker with Docker Compose
+
+## Python project
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+```
+
+## Start PostGIS
+
+Copy the example configuration if local overrides are needed:
+
+```bash
+cp .env.example .env
+docker compose up -d db
+docker compose ps
+```
+
+On the first start of a new Docker volume, `sql/schema.sql` is applied
+automatically by the Postgres image.
+
+To initialize or safely reapply the schema explicitly:
+
+```bash
+docker compose exec -T db \
+  psql -v ON_ERROR_STOP=1 \
+  -U public_health \
+  -d public_health_clustering \
+  -f /docker-entrypoint-initdb.d/001-schema.sql
+```
+
+If `.env` changes the database user or database name, use those values in the
+explicit `psql` command.
+
+## Stop PostGIS
+
+```bash
+docker compose down
+```
+
+The named database volume is retained. Removing it requires the explicit and
+destructive `docker compose down --volumes` command.
+
+## Milestone 1 scope
+
+The schema contains the six initial tables and the
+`current_patient_spatial_points` view. Patient address fields remain raw source
+data. Resolved geometry is stored only in `patient_locations`, along with its
+provenance and proxy status. No real patient data is included in this
+repository.
