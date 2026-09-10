@@ -1,0 +1,2 @@
+patient_id,name,illness,diagnosis_date,address_text,community_name,patient_id
+PAT-DUPHDR-001,Test DupHeader,Measles,2026-09-01,"1 Test St, Cedarbrook",,

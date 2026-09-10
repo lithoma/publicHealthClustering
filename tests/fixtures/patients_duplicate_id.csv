@@ -1,0 +1,3 @@
+patient_id,name,illness,diagnosis_date,address_text,community_name,diagnosing_facility_code
+PAT-DUP-001,Test One,Measles,2026-09-01,"1 Test St, Cedarbrook",,
+PAT-DUP-001,Test Two,Pertussis,2026-09-02,"2 Test St, Cedarbrook",,

@@ -1,0 +1,4 @@
+community_code,community_name,full_address,longitude,latitude
+COMM-BAD-001,Test Hills,"1 Test Rd, Cedarbrook",-200,39.5
+COMM-BAD-002,Test Flats,"2 Test Rd, Cedarbrook",-98.5,95
+COMM-BAD-003,Test Valley,"3 Test Rd, Cedarbrook",not-a-number,39.5

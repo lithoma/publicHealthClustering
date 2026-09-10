@@ -1,0 +1,2 @@
+patient_id,name,illness,diagnosis_date,address_text,community_name,diagnosing_facility_code
+PAT-FREEFAC-001,Test Nine,Measles,2026-09-01,"9 Test St, Cedarbrook",,bad code with spaces

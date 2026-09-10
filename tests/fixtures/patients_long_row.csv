@@ -1,0 +1,2 @@
+patient_id,name,illness,diagnosis_date,address_text,community_name,diagnosing_facility_code
+PAT-LONG-001,Test Long,Measles,2026-09-01,"1 Test St, Cedarbrook",,,EXTRA_CELL

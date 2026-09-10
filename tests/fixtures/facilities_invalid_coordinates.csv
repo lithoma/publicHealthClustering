@@ -1,0 +1,3 @@
+facility_code,facility_name,facility_type,full_address,longitude,latitude
+FAC-BAD-001,Test Clinic,CLINIC,"1 Test Way, Cedarbrook",200,39.5
+FAC-BAD-002,Test Hospital,HOSPITAL,"2 Test Way, Cedarbrook",-98.5,-95

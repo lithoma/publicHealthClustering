@@ -1,0 +1,3 @@
+facility_code,facility_name,facility_type,full_address,longitude,latitude
+FAC-DUP-001,Test Clinic A,CLINIC,"1 Test Way, Cedarbrook",-98.5,39.5
+FAC-DUP-001,Test Clinic B,CLINIC,"2 Test Way, Cedarbrook",-98.4,39.4

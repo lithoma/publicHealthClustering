@@ -1,0 +1,2 @@
+patient_id,name,illness,diagnosis_date,address_text,community_name,diagnosing_facility_code
+PAT-BLANKOPT-001,Test Optional Blanks,Measles,2026-09-01,,,

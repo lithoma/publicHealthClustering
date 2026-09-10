@@ -1,0 +1,5 @@
+patient_id,name,illness,diagnosis_date,address_text,community_name,diagnosing_facility_code
+,Test Five,Measles,2026-09-01,"5 Test St, Cedarbrook",,
+PAT-MISSING-002,,Pertussis,2026-09-02,"6 Test St, Cedarbrook",,
+PAT-MISSING-003,Test Seven,,2026-09-03,"7 Test St, Cedarbrook",,
+PAT-MISSING-004,Test Eight,Measles,,"8 Test St, Cedarbrook",,

@@ -1,0 +1,4 @@
+community_code,community_name,full_address,longitude,latitude
+COMM-NAN-001,Test NaN,"1 Test Rd, Cedarbrook",nan,39.5
+COMM-INF-001,Test Inf,"2 Test Rd, Cedarbrook",-98.5,inf
+COMM-NINF-001,Test NegInf,"3 Test Rd, Cedarbrook",-98.5,-infinity

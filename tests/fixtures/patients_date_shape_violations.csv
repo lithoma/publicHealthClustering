@@ -1,0 +1,3 @@
+patient_id,name,illness,diagnosis_date,address_text,community_name,diagnosing_facility_code
+PAT-COMPACT-001,Test Compact,Measles,20260910,"1 Test St, Cedarbrook",,
+PAT-WEEK-001,Test Week,Measles,2026-W37-3,"2 Test St, Cedarbrook",,

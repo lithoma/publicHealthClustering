@@ -1,0 +1,3 @@
+community_code,community_name,full_address,longitude,latitude
+COMM-BOUND-001,Test West,"1 Test Rd, Cedarbrook",-180,-90
+COMM-BOUND-002,Test East,"2 Test Rd, Cedarbrook",180,90

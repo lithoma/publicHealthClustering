@@ -1,0 +1,4 @@
+patient_id,name,illness,diagnosis_date,address_text,community_name,diagnosing_facility_code
+PAT-MIX-001,Valid Patient,Measles,2026-09-01,"1 Test St, Cedarbrook",,
+PAT-MIX-002,,Pertussis,2026-09-02,"2 Test St, Cedarbrook",,
+PAT-MIX-003,Bad Date Patient,Measles,20260903,"3 Test St, Cedarbrook",,

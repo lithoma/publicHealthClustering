@@ -15,6 +15,9 @@ dependencies = [
     "GeoAlchemy2>=0.14",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
