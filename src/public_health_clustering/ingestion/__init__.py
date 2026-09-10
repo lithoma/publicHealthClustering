@@ -1,9 +1,10 @@
-"""CSV parsing and validation for source data (Milestone 3.1).
+"""CSV parsing, validation, and database import for source data (Milestone 3).
 
-This package only parses and validates the three sample CSV formats
-(communities, healthcare_facilities, patients). It does not write anything to
-the database, resolve patient locations, match communities against patients,
-or fall back to facility coordinates — those are later milestones.
+This package parses and validates the three sample CSV formats (communities,
+healthcare_facilities, patients) and can insert/update already-validated
+records into the database (Milestone 3.2). It does not resolve patient
+locations, match communities against patients, fall back to facility
+coordinates, or run clustering — those are later milestones.
 """
 
 from __future__ import annotations
@@ -11,6 +12,16 @@ from __future__ import annotations
 from pathlib import Path
 
 from .errors import ValidationError, ValidationErrorCode
+from .importer import (
+    DatasetImportResult,
+    ImportAction,
+    ImportBatchResult,
+    ImportOutcome,
+    import_communities,
+    import_dataset,
+    import_facilities,
+    import_patients,
+)
 from .parsing import parse_communities_csv, parse_facilities_csv, parse_patients_csv
 from .records import (
     RawCommunityRow,
@@ -67,4 +78,12 @@ __all__ = [
     "load_communities",
     "load_facilities",
     "load_patients",
+    "ImportAction",
+    "ImportOutcome",
+    "ImportBatchResult",
+    "DatasetImportResult",
+    "import_communities",
+    "import_facilities",
+    "import_patients",
+    "import_dataset",
 ]
