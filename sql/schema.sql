@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS clustering_runs (
     window_days INTEGER NOT NULL DEFAULT 7 CHECK (window_days > 0),
     eps_meters DOUBLE PRECISION NOT NULL CHECK (eps_meters > 0),
     min_points INTEGER NOT NULL CHECK (min_points > 0),
+    target_srid INTEGER NOT NULL CHECK (target_srid > 0),
     illness_filter TEXT,
     include_proxy_locations BOOLEAN NOT NULL DEFAULT TRUE,
     status TEXT NOT NULL DEFAULT 'PENDING' CHECK (
@@ -111,6 +112,8 @@ CREATE TABLE IF NOT EXISTS clustering_results (
         ON UPDATE CASCADE ON DELETE RESTRICT,
     patient_location_id BIGINT NOT NULL,
     cluster_id INTEGER,
+    illness_snapshot TEXT NOT NULL,
+    diagnosis_date_snapshot DATE NOT NULL,
     location_snapshot geometry(Point, 4326) NOT NULL,
     location_source_snapshot TEXT NOT NULL CHECK (
         location_source_snapshot IN (

@@ -266,6 +266,7 @@ class ClusteringRun(Base):
         CheckConstraint("window_days > 0"),
         CheckConstraint("eps_meters > 0"),
         CheckConstraint("min_points > 0"),
+        CheckConstraint("target_srid > 0"),
         CheckConstraint("status IN ('PENDING', 'RUNNING', 'COMPLETED', 'FAILED')"),
         CheckConstraint("case_count IS NULL OR case_count >= 0"),
         CheckConstraint("proxy_case_count IS NULL OR proxy_case_count >= 0"),
@@ -288,6 +289,7 @@ class ClusteringRun(Base):
     )
     eps_meters: Mapped[float] = mapped_column(Double, nullable=False)
     min_points: Mapped[int] = mapped_column(Integer, nullable=False)
+    target_srid: Mapped[int] = mapped_column(Integer, nullable=False)
     illness_filter: Mapped[str | None] = mapped_column(Text)
     include_proxy_locations: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default=text("true")
@@ -358,6 +360,8 @@ class ClusteringResult(Base):
     )
     patient_location_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     cluster_id: Mapped[int | None] = mapped_column(Integer)
+    illness_snapshot: Mapped[str] = mapped_column(Text, nullable=False)
+    diagnosis_date_snapshot: Mapped[date] = mapped_column(Date, nullable=False)
     location_snapshot: Mapped[WKBElement] = mapped_column(
         Geometry(geometry_type="POINT", srid=4326, spatial_index=False), nullable=False
     )
