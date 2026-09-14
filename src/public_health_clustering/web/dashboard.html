@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>疾病空间聚集观察台</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root{--ink:#18211d;--muted:#66736c;--paper:#f3f1e9;--panel:#fffdf7;--line:#d9d8cf;--accent:#0c7057;--accent2:#d95d39}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,"PingFang SC",system-ui,sans-serif;color:var(--ink);background:var(--paper)}
+    header{height:72px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;background:#173c32;color:white}
+    header h1{font-size:20px;margin:0;letter-spacing:.04em}header span{font-size:12px;color:#b9d2c9}
+    .app{display:grid;grid-template-columns:320px 1fr;height:calc(100vh - 72px)}
+    aside{padding:22px;border-right:1px solid var(--line);background:var(--panel);overflow:auto}main{min-width:0;display:flex;flex-direction:column}
+    h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;margin:0 0 14px;color:var(--muted)}
+    label{font-size:12px;color:var(--muted);display:block;margin:12px 0 5px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    input,select{width:100%;border:1px solid var(--line);border-radius:7px;padding:9px;background:white;color:var(--ink)}
+    button{width:100%;border:0;border-radius:8px;padding:11px;font-weight:650;cursor:pointer;background:var(--accent);color:white;margin-top:14px}
+    button.secondary{background:#e8eee9;color:#21473c}button:disabled{opacity:.5;cursor:wait}.rule{height:1px;background:var(--line);margin:22px 0}
+    .tabs{height:50px;padding:0 20px;display:flex;gap:22px;align-items:end;background:var(--panel);border-bottom:1px solid var(--line)}
+    .tab{width:auto;margin:0;padding:14px 4px 12px;background:none;color:var(--muted);border-radius:0;border-bottom:3px solid transparent}.tab.active{color:var(--accent);border-color:var(--accent)}
+    #map{flex:1;min-height:320px}.view{display:none;flex:1;min-height:0}.view.active{display:flex;flex-direction:column}
+    #dataView{overflow:auto;padding:20px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}.stat{padding:10px;background:#eef2ed;border-radius:7px}.stat b{display:block;font-size:19px}.stat small{color:var(--muted)}
+    table{border-collapse:collapse;width:100%;font-size:13px;background:white}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}th{position:sticky;top:0;background:#e9ede7}
+    .badge{padding:3px 7px;border-radius:999px;color:white;font-size:11px}.proxy{font-weight:700;color:var(--accent2)}
+    .empty{position:absolute;z-index:500;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:25px;border-radius:12px;box-shadow:0 8px 30px #0002;text-align:center;max-width:360px}.empty h3{margin-top:0}.empty button{width:auto;padding:10px 18px}
+    .notice{font-size:12px;line-height:1.5;color:var(--muted);margin-top:10px}.error{color:#a13c2c}.leaflet-div-icon{background:transparent;border:0}
+    @media(max-width:760px){.app{display:block;height:auto}aside{border-right:0}.view{height:65vh}.tabs{position:sticky;top:0;z-index:600}}
+  </style>
+</head>
+<body>
+<header><h1>疾病空间聚集观察台</h1><span>Persisted PostGIS DBSCAN · 本地分析与浏览</span></header>
+<div class="app"><aside>
+  <h2>查看已有分析</h2><label for="runSelect">聚类运行</label><select id="runSelect"></select>
+  <div class="stats"><div class="stat"><b id="cases">—</b><small>病例</small></div><div class="stat"><b id="clusters">—</b><small>聚类</small></div><div class="stat"><b id="proxies">—</b><small>代理点</small></div></div>
+  <h2>结果时间筛选</h2><div class="row"><div><label for="filterStart">诊断日期起</label><input id="filterStart" type="date"></div><div><label for="filterEnd">诊断日期止</label><input id="filterEnd" type="date"></div></div>
+  <button id="applyFilter" class="secondary">应用筛选</button>
+  <div class="rule"></div><h2>运行新分析</h2>
+  <label for="analysisEnd">分析截止日期（不包含当天）</label><input id="analysisEnd" type="date" value="2026-09-11">
+  <div class="row"><div><label for="days">窗口天数</label><input id="days" type="number" min="1" value="7"></div><div><label for="eps">距离 ε（米）</label><input id="eps" type="number" min="1" value="500"></div></div>
+  <div class="row"><div><label for="minPoints">最少点数</label><input id="minPoints" type="number" min="1" value="2"></div><div><label for="srid">目标 SRID</label><input id="srid" type="number" value="32614"></div></div>
+  <label><input id="proxyToggle" type="checkbox" checked style="width:auto"> 包含医疗机构代理位置</label>
+  <button id="runButton">运行并显示</button><div id="message" class="notice"></div>
+</aside><main>
+  <nav class="tabs"><button class="tab active" data-view="mapView">聚集地图</button><button class="tab" data-view="dataView">数据</button></nav>
+  <section id="mapView" class="view active"><div id="map"></div><div id="empty" class="empty" hidden><h3>还没有可显示的聚类结果</h3><p>测试会清空数据库。可以载入仓库内的虚构示例数据，立即生成一次聚类。</p><button id="demoButton">载入示例并显示</button></div></section>
+  <section id="dataView" class="view"><table><thead><tr><th>患者标识</th><th>疾病</th><th>诊断日期</th><th>聚类</th><th>位置来源</th><th>代理</th></tr></thead><tbody id="rows"></tbody></table></section>
+</main></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const $=id=>document.getElementById(id);let runs=[],map,layer;
+function initMap(){map=L.map('map',{zoomControl:true}).setView([39.5,-98.5],11);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);layer=L.featureGroup().addTo(map)}
+async function api(url,options){const r=await fetch(url,options);if(!r.ok){let detail='请求失败';try{detail=(await r.json()).detail}catch{}throw new Error(detail)}return r.json()}
+function msg(text,error=false){$('message').textContent=text;$('message').className='notice'+(error?' error':'')}
+async function loadRuns(selectNewest=true){runs=await api('/api/runs');const select=$('runSelect');select.innerHTML=runs.map(r=>`<option value="${r.run_id}">#${r.run_id} · ${r.window_start.slice(0,10)} → ${r.window_end.slice(0,10)} · ${r.status}</option>`).join('');$('empty').hidden=runs.some(r=>r.status==='COMPLETED');if(selectNewest&&runs.length)select.value=runs.find(r=>r.status==='COMPLETED')?.run_id||runs[0].run_id;if(select.value)await loadResults()}
+async function loadResults(){const id=$('runSelect').value;if(!id)return;const qs=new URLSearchParams({run_id:id});if($('filterStart').value)qs.set('start',$('filterStart').value);if($('filterEnd').value)qs.set('end',$('filterEnd').value);try{const data=await api('/api/results?'+qs);render(data)}catch(e){msg(e.message,true)}}
+function render({run,points}){$('cases').textContent=points.length;$('clusters').textContent=run.cluster_count??'—';$('proxies').textContent=points.filter(p=>p.is_proxy).length;layer.clearLayers();const bounds=[];for(const p of points){const html=`<b>${p.patient_id}</b><br>${p.illness} · ${p.diagnosis_date}<br>${p.cluster_label}<br>${p.location_source}${p.is_proxy?' · 代理点':''}`;let marker;if(p.is_proxy){marker=L.marker([p.latitude,p.longitude],{icon:L.divIcon({className:'',html:`<div style="color:${p.color};font-size:25px;text-shadow:0 0 2px white">▲</div>`,iconSize:[22,22]})})}else{marker=L.circleMarker([p.latitude,p.longitude],{radius:8,color:p.color,fillColor:p.color,fillOpacity:.82,weight:2})}marker.bindPopup(html).bindTooltip(`${p.patient_id} · ${p.cluster_label}`).addTo(layer);bounds.push([p.latitude,p.longitude])}if(bounds.length)map.fitBounds(bounds,{padding:[35,35],maxZoom:15});$('rows').innerHTML=points.map(p=>`<tr><td>${p.patient_id}</td><td>${p.illness}</td><td>${p.diagnosis_date}</td><td><span class="badge" style="background:${p.color}">${p.cluster_label}</span></td><td>${p.location_source}</td><td class="${p.is_proxy?'proxy':''}">${p.is_proxy?'是':'否'}</td></tr>`).join('');$('empty').hidden=points.length>0||runs.length>0;msg(`正在查看运行 #${run.run_id}，当前筛选显示 ${points.length} 个点。`)}
+async function busy(button,fn){button.disabled=true;try{await fn()}catch(e){msg(e.message,true)}finally{button.disabled=false}}
+$('runSelect').onchange=loadResults;$('applyFilter').onclick=loadResults;
+$('runButton').onclick=()=>busy($('runButton'),async()=>{msg('正在运行空间聚类…');const body={analysis_end:$('analysisEnd').value,window_days:+$('days').value,eps_meters:+$('eps').value,min_points:+$('minPoints').value,target_srid:+$('srid').value,include_proxy_locations:$('proxyToggle').checked};await api('/api/runs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});$('filterStart').value='';$('filterEnd').value='';await loadRuns(true)});
+$('demoButton').onclick=()=>busy($('demoButton'),async()=>{msg('正在载入虚构示例并聚类…');await api('/api/demo',{method:'POST'});await loadRuns(true)});
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===t.dataset.view));if(t.dataset.view==='mapView')setTimeout(()=>map.invalidateSize(),10)});
+initMap();loadRuns().catch(e=>msg('无法连接数据库：'+e.message,true));
+</script></body></html>

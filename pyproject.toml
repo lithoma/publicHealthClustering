@@ -13,13 +13,22 @@ dependencies = [
     "psycopg2-binary>=2.9",
     "python-dotenv>=1.0",
     "GeoAlchemy2>=0.14",
+    "folium>=0.20",
+    "fastapi>=0.116",
+    "uvicorn>=0.35",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
+[project.scripts]
+phc-dashboard = "public_health_clustering.dashboard:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+public_health_clustering = ["web/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
