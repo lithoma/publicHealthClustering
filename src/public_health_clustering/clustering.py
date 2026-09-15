@@ -154,6 +154,7 @@ current_patient_spatial_points = Table(
     Column("patient_id", Text),
     Column("illness", Text),
     Column("diagnosis_date", Date),
+    Column("case_event_id", BigInteger),
     Column("patient_location_id", BigInteger),
     Column("location", Geometry(geometry_type="POINT", srid=4326, spatial_index=False)),
     Column("location_source", StrEnumText(LocationSource)),
@@ -327,12 +328,16 @@ def run_clustering(
             transformed_location = func.ST_Transform(cpsp.c.location, target_srid)
             raw_cluster_id = func.ST_ClusterDBSCAN(
                 transformed_location, eps_meters, min_points
-            ).over(partition_by=cpsp.c.illness, order_by=cpsp.c.patient_id)
+            ).over(
+                partition_by=cpsp.c.illness,
+                order_by=(cpsp.c.patient_id, cpsp.c.case_event_id),
+            )
 
             query = select(
                 cpsp.c.patient_id,
                 cpsp.c.illness,
                 cpsp.c.diagnosis_date,
+                cpsp.c.case_event_id,
                 cpsp.c.patient_location_id,
                 cpsp.c.location,
                 cpsp.c.location_source,
@@ -367,6 +372,7 @@ def run_clustering(
                         run_id=run.run_id,
                         patient_id=row.patient_id,
                         patient_location_id=row.patient_location_id,
+                        case_event_id=row.case_event_id,
                         cluster_id=cluster_id,
                         illness_snapshot=row.illness,
                         diagnosis_date_snapshot=row.diagnosis_date,

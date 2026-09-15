@@ -7,9 +7,10 @@ import json
 import math
 from pathlib import Path
 import random
+import tempfile
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
@@ -17,9 +18,12 @@ from sqlalchemy.orm import Session
 
 from .clustering import ClusteringParameterError, run_clustering
 from .db import create_db_engine
+from .ingestion import load_patients
+from .ingestion.importer import import_patients
 from .models import (
     ClusteringResult,
     ClusteringRun,
+    CaseEvent,
     DataBatch,
     LocationSource,
     Patient,
@@ -115,6 +119,54 @@ def cities() -> list[dict]:
     return [{"id": city_id, **config} for city_id, config in CITY_CONFIG.items()]
 
 
+async def _validated_patient_upload(file: UploadFile):
+    content = await file.read()
+    if len(content) > 10_000_000:
+        raise HTTPException(413, "CSV 文件不能超过 10 MB")
+    with tempfile.NamedTemporaryFile(suffix=".csv") as temporary:
+        temporary.write(content)
+        temporary.flush()
+        return load_patients(Path(temporary.name))
+
+
+@app.post("/api/import/preview")
+async def preview_patient_import(file: UploadFile = File(...)) -> dict:
+    records, errors = await _validated_patient_upload(file)
+    return {"valid_count": len(records), "error_count": len(errors),
+            "errors": [{"row": e.row_number, "field": e.field,
+                        "code": e.code.value, "message": e.message} for e in errors[:100]]}
+
+
+@app.post("/api/import/patients")
+async def confirm_patient_import(
+    batch_name: str = Form(...),
+    source_name: str = Form(""),
+    file: UploadFile = File(...),
+) -> dict:
+    records, errors = await _validated_patient_upload(file)
+    if errors:
+        raise HTTPException(400, f"CSV 仍有 {len(errors)} 个验证错误，未写入数据库")
+    engine = create_db_engine()
+    try:
+        with Session(engine) as session:
+            if session.scalar(select(DataBatch).where(DataBatch.batch_name == batch_name)):
+                raise HTTPException(409, "批次名称已存在")
+            batch = DataBatch(batch_name=batch_name.strip(), source_name=source_name.strip() or None,
+                              is_synthetic=False, is_included=True)
+            session.add(batch)
+            session.flush()
+            outcome = import_patients(session, records, batch=batch)
+            if outcome.failed:
+                session.rollback()
+                raise HTTPException(400, f"有 {outcome.failed} 条记录无法导入，整个批次未写入")
+            batch_id, saved_name = batch.batch_id, batch.batch_name
+            session.commit()
+            return {"batch_id": batch_id, "batch_name": saved_name,
+                    "record_count": len(records)}
+    finally:
+        engine.dispose()
+
+
 @app.get("/api/batches")
 def batches() -> list[dict]:
     engine = create_db_engine()
@@ -123,7 +175,8 @@ def batches() -> list[dict]:
             rows = session.execute(select(DataBatch).order_by(DataBatch.created_at.desc())).scalars()
             return [{"batch_id": b.batch_id, "batch_name": b.batch_name,
                      "source_name": b.source_name, "is_synthetic": b.is_synthetic,
-                     "is_included": b.is_included, "patient_count": len(b.patients),
+                     "is_included": b.is_included,
+                     "patient_count": session.scalar(select(func.count()).select_from(CaseEvent).where(CaseEvent.batch_id == b.batch_id)),
                      "created_at": b.created_at.isoformat()} for b in rows]
     finally:
         engine.dispose()
@@ -152,14 +205,21 @@ def delete_batch(batch_id: int) -> dict:
             batch = session.get(DataBatch, batch_id)
             if batch is None:
                 raise HTTPException(404, "Batch does not exist")
-            patient_ids = select(Patient.patient_id).where(Patient.batch_id == batch_id)
+            event_ids = select(CaseEvent.case_event_id).where(CaseEvent.batch_id == batch_id)
             dependent = session.scalar(select(func.count()).select_from(ClusteringResult).where(
-                ClusteringResult.patient_id.in_(patient_ids)
+                ClusteringResult.case_event_id.in_(event_ids)
             ))
             if dependent:
                 raise HTTPException(409, "该批次已被分析运行引用；请保留审计历史或先删除相关运行。")
-            count = session.scalar(select(func.count()).select_from(Patient).where(Patient.batch_id == batch_id))
-            session.query(Patient).filter(Patient.batch_id == batch_id).delete(synchronize_session=False)
+            count = session.scalar(select(func.count()).select_from(CaseEvent).where(CaseEvent.batch_id == batch_id))
+            patient_ids = list(session.scalars(select(CaseEvent.patient_id).where(CaseEvent.batch_id == batch_id)))
+            session.query(CaseEvent).filter(CaseEvent.batch_id == batch_id).delete(synchronize_session=False)
+            for patient_id in patient_ids:
+                has_other_events = session.scalar(select(func.count()).select_from(CaseEvent).where(CaseEvent.patient_id == patient_id))
+                if not has_other_events:
+                    patient = session.get(Patient, patient_id)
+                    if patient is not None:
+                        session.delete(patient)
             session.delete(batch)
             session.commit()
             return {"deleted": True, "patient_count": count}
@@ -310,6 +370,11 @@ def load_demo(city: str = "guangzhou") -> dict:
                         location_source=LocationSource.MANUAL,
                         is_proxy=False,
                         is_current=True,
+                    ))
+                    session.add(CaseEvent(
+                        batch_id=batch.batch_id, patient_id=patient_id,
+                        source_case_id=patient_id, illness=illness,
+                        diagnosis_date=patient.diagnosis_date,
                     ))
             batch_id = batch.batch_id
             session.commit()

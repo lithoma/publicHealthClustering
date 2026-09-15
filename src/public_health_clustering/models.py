@@ -161,6 +161,7 @@ class DataBatch(Base):
         DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False
     )
     patients: Mapped[list["Patient"]] = relationship(back_populates="batch")
+    case_events: Mapped[list["CaseEvent"]] = relationship(back_populates="batch")
 
 
 class Patient(Base):
@@ -199,6 +200,34 @@ class Patient(Base):
     clustering_results: Mapped[list["ClusteringResult"]] = relationship(
         back_populates="patient", passive_deletes=True
     )
+    case_events: Mapped[list["CaseEvent"]] = relationship(back_populates="patient")
+
+
+class CaseEvent(Base):
+    __tablename__ = "case_events"
+    __table_args__ = (
+        UniqueConstraint("batch_id", "source_case_id", name="case_events_batch_source_unique"),
+        Index("case_events_batch_idx", "batch_id"),
+        Index("case_events_patient_idx", "patient_id"),
+    )
+
+    case_event_id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    batch_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("data_batches.batch_id", onupdate="CASCADE", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    patient_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("patients.patient_id", onupdate="CASCADE", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    source_case_id: Mapped[str] = mapped_column(Text, nullable=False)
+    illness: Mapped[str] = mapped_column(Text, nullable=False)
+    diagnosis_date: Mapped[date] = mapped_column(Date, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False
+    )
+    batch: Mapped[DataBatch] = relationship(back_populates="case_events")
+    patient: Mapped[Patient] = relationship(back_populates="case_events")
 
 
 class PatientLocation(Base):
@@ -355,9 +384,7 @@ class ClusteringResult(Base):
             "OR (location_source_snapshot <> 'FACILITY_PROXY' AND is_proxy_snapshot = FALSE)",
             name="clustering_results_proxy_snapshot_check",
         ),
-        UniqueConstraint(
-            "run_id", "patient_id", name="clustering_results_run_patient_unique"
-        ),
+        UniqueConstraint("run_id", "case_event_id", name="clustering_results_run_case_event_unique"),
         Index(
             "clustering_results_location_snapshot_gix",
             "location_snapshot",
@@ -380,6 +407,9 @@ class ClusteringResult(Base):
         nullable=False,
     )
     patient_location_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    case_event_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("case_events.case_event_id", onupdate="CASCADE", ondelete="RESTRICT")
+    )
     cluster_id: Mapped[int | None] = mapped_column(Integer)
     illness_snapshot: Mapped[str] = mapped_column(Text, nullable=False)
     diagnosis_date_snapshot: Mapped[date] = mapped_column(Date, nullable=False)

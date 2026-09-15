@@ -16,6 +16,8 @@ dependencies = [
     "folium>=0.20",
     "fastapi>=0.116",
     "uvicorn>=0.35",
+    "alembic>=1.16",
+    "python-multipart>=0.0.20",
 ]
 
 [project.optional-dependencies]

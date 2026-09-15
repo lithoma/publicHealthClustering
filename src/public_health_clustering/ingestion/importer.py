@@ -60,7 +60,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from ..models import Community, HealthcareFacility, Patient
+from ..models import CaseEvent, Community, DataBatch, HealthcareFacility, Patient
 from .records import ValidatedCommunity, ValidatedFacility, ValidatedPatient
 
 
@@ -274,8 +274,32 @@ def _upsert_patient(session: Session, record: ValidatedPatient) -> ImportOutcome
         return ImportOutcome(record.patient_id, ImportAction.FAILED, str(exc))
 
 
-def import_patients(session: Session, records: Sequence[ValidatedPatient]) -> ImportBatchResult:
-    return ImportBatchResult([_upsert_patient(session, record) for record in records])
+def import_patients(
+    session: Session,
+    records: Sequence[ValidatedPatient],
+    *,
+    batch: DataBatch | None = None,
+) -> ImportBatchResult:
+    outcomes: list[ImportOutcome] = []
+    for record in records:
+        outcome = _upsert_patient(session, record)
+        if batch is not None and outcome.action != ImportAction.FAILED:
+            event = session.scalar(select(CaseEvent).where(
+                CaseEvent.batch_id == batch.batch_id,
+                CaseEvent.source_case_id == record.patient_id,
+            ))
+            if event is None:
+                session.add(CaseEvent(
+                    batch_id=batch.batch_id, patient_id=record.patient_id,
+                    source_case_id=record.patient_id, illness=record.illness,
+                    diagnosis_date=record.diagnosis_date,
+                ))
+                session.flush()
+            else:
+                event.illness = record.illness
+                event.diagnosis_date = record.diagnosis_date
+        outcomes.append(outcome)
+    return ImportBatchResult(outcomes)
 
 
 def import_dataset(
@@ -283,6 +307,8 @@ def import_dataset(
     communities: Sequence[ValidatedCommunity],
     facilities: Sequence[ValidatedFacility],
     patients: Sequence[ValidatedPatient],
+    *,
+    batch: DataBatch | None = None,
 ) -> DatasetImportResult:
     """Import communities, then facilities, then patients, in that order.
 
@@ -293,5 +319,5 @@ def import_dataset(
     """
     community_result = import_communities(session, communities)
     facility_result = import_facilities(session, facilities)
-    patient_result = import_patients(session, patients)
+    patient_result = import_patients(session, patients, batch=batch)
     return DatasetImportResult(community_result, facility_result, patient_result)
