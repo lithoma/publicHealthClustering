@@ -229,3 +229,26 @@ support, and denied provider data collection. Strict ZDR was tested but the free
 pool had no compatible endpoint, so only de-identified aggregate context is sent
 and provider retention remains a documented prototype limitation. Model identity is returned
 to the UI because the free router may select different compatible models.
+## Prediction is isolated and persisted because forecasts must be audited later
+
+Prediction runs and grid results live in dedicated tables and never overwrite
+cases, clustering runs, reports, knowledge, or strategies. Each result stores
+its model/version, cutoff, horizon, feature parameters, feature snapshot,
+uncertainty bounds, runtime, and validation status. This allows future observed
+cases to be compared with exactly what was forecast at issuance time.
+
+## The first forecasting model is shared, training-free, and unvalidated
+
+All diseases use the same versioned calculation while remaining separate output
+groups. The baseline combines recent 7-day incidence, the preceding week, older
+14-day activity, bounded trend, and neighbouring-cell activity. Its weights are
+explicit engineering assumptions. Synthetic scenarios test behavior only; they
+must not be presented as evidence of real predictive accuracy.
+
+## Learned models must implement the same forecast contract and beat baselines
+
+Future negative-binomial and boosted-tree models consume the same feature
+surface and emit the same persisted grid forecast shape. LightGBM/XGBoost are
+challengers, not assumed public-health standards. Promotion requires rolling
+time-based backtesting, uncertainty calibration, and performance reporting by
+disease and geography; random train/test splits are not acceptable.

@@ -19,6 +19,7 @@ not yet geocode free-text addresses or generate AI prevention strategies.
 - Per-cluster descriptive statistics, compact charts, and standalone HTML reports
 - Versioned Chinese disease-prevention knowledge with official source links
 - Automatic Chinese cluster strategy briefs with section-level evidence references
+- Persisted, training-free seven-day grid forecasts shared across diseases
 - Alembic-managed schema evolution
 
 ## Prerequisites
@@ -61,6 +62,7 @@ Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/). The dashboard provides:
 - `聚类报告`: one Chinese descriptive report per cluster
 - `防控知识库`: searchable Chinese guidance summaries and official sources
 - `聚类报告`: generate an evidence-grounded prevention strategy for any cluster
+- `七日预测`: generate an isolated unvalidated spatial forecast on demand
 - `导入数据`: CSV preview and confirmed batch import
 
 If the database is empty, select Guangzhou and load its synthetic demo. The
@@ -189,6 +191,26 @@ therefore treats severity calibration, unsupported recommendations, citation
 quality, and cross-model consistency as release criteria rather than cosmetic
 prompt tuning.
 
+## Seven-day prediction baseline
+
+The optional `七日预测` tab creates a persisted forecast for the seven days
+beginning at a selected cutoff. Version 1 uses one shared, training-free model
+for all diseases. Cases remain grouped by disease and metre-based grid cell,
+while the calculation uses recent 7-day counts, the preceding week, older
+14-day activity, bounded trend, and activity in adjacent cells. The grid size
+defaults to 1 km and uses the city selector's projected SRID.
+
+Every run stores its cutoff, horizon, grid, feature/model versions, parameters,
+runtime and validation status. Every cell stores the feature snapshot, expected
+count, uncertainty range and WGS84 polygon used by the map. Prediction data is
+separate from clustering and does not modify existing analysis or reports.
+
+All current results are labelled `SIMULATION_UNVALIDATED`. The fixed weights and
+intervals are initial software assumptions, not claims of epidemiological
+accuracy. Once real longitudinal data exists, rolling-origin backtesting will
+calibrate the baseline and compare it against a negative-binomial count model
+and, if sample size supports it, LightGBM/XGBoost challengers.
+
 ## Tests
 
 Start the local PostGIS service, then run:
@@ -212,6 +234,7 @@ src/public_health_clustering/
   knowledge_base.py      versioned Chinese knowledge retrieval and seed content
   models.py              SQLAlchemy ORM models
   reporting.py           deterministic cluster statistics and HTML reports
+  prediction.py          shared seven-day spatial baseline and persisted output
   strategy.py            model agent context, provider call, and citation validation
   visualization.py       standalone Folium run maps
   web/dashboard.html     local dashboard interface

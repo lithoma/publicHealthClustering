@@ -501,3 +501,41 @@ class KnowledgeSection(Base):
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False)
     document: Mapped[KnowledgeDocument] = relationship(back_populates="sections")
+
+
+class PredictionRun(Base):
+    __tablename__ = "prediction_runs"
+    __table_args__ = (CheckConstraint("horizon_days > 0"), CheckConstraint("history_days > 0"), CheckConstraint("grid_size_meters > 0"), CheckConstraint("target_srid > 0"), CheckConstraint("status IN ('COMPLETED', 'FAILED')"))
+    prediction_run_id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    cutoff_date: Mapped[date] = mapped_column(Date, nullable=False)
+    forecast_start: Mapped[date] = mapped_column(Date, nullable=False)
+    forecast_end: Mapped[date] = mapped_column(Date, nullable=False)
+    horizon_days: Mapped[int] = mapped_column(Integer, nullable=False, default=7, server_default=text("7"))
+    history_days: Mapped[int] = mapped_column(Integer, nullable=False, default=28, server_default=text("28"))
+    grid_size_meters: Mapped[int] = mapped_column(Integer, nullable=False)
+    target_srid: Mapped[int] = mapped_column(Integer, nullable=False)
+    model_type: Mapped[str] = mapped_column(Text, nullable=False)
+    model_version: Mapped[str] = mapped_column(Text, nullable=False)
+    validation_status: Mapped[str] = mapped_column(Text, nullable=False)
+    parameters_json: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'COMPLETED'"))
+    runtime_ms: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False)
+    results: Mapped[list["PredictionResult"]] = relationship(back_populates="run", passive_deletes=True)
+
+
+class PredictionResult(Base):
+    __tablename__ = "prediction_results"
+    __table_args__ = (UniqueConstraint("prediction_run_id", "disease", "cell_x", "cell_y", name="prediction_results_run_disease_cell_unique"), CheckConstraint("expected_cases >= 0 AND lower_bound >= 0 AND upper_bound >= lower_bound"), Index("prediction_results_run_idx", "prediction_run_id"), Index("prediction_results_cell_gix", "cell_geometry", postgresql_using="gist"))
+    prediction_result_id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    prediction_run_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("prediction_runs.prediction_run_id", onupdate="CASCADE", ondelete="CASCADE"), nullable=False)
+    disease: Mapped[str] = mapped_column(Text, nullable=False)
+    cell_x: Mapped[int] = mapped_column(Integer, nullable=False)
+    cell_y: Mapped[int] = mapped_column(Integer, nullable=False)
+    cell_geometry: Mapped[WKBElement] = mapped_column(Geometry(geometry_type="POLYGON", srid=4326, spatial_index=False), nullable=False)
+    expected_cases: Mapped[float] = mapped_column(Double, nullable=False)
+    lower_bound: Mapped[float] = mapped_column(Double, nullable=False)
+    upper_bound: Mapped[float] = mapped_column(Double, nullable=False)
+    information_level: Mapped[str] = mapped_column(Text, nullable=False)
+    features_json: Mapped[str] = mapped_column(Text, nullable=False)
+    run: Mapped[PredictionRun] = relationship(back_populates="results")

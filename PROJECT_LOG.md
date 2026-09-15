@@ -237,3 +237,38 @@ key must be stored only in the ignored local `.env` file.
 
 **Next:** Revoke the exposed key, configure a replacement, run one live strategy
 evaluation, then strengthen knowledge coverage and formal output evaluations.
+### 2026-09-15 — Milestone 8A: Shared seven-day spatial baseline
+
+**Implemented:** Added an isolated prediction subsystem that forecasts the next
+7 days by disease and configurable projected grid cell. It uses one shared,
+training-free model contract for every disease with fixed versioned features:
+case counts in days 1–7, 8–14, and 15–28; bounded week-over-week trend;
+neighbouring-cell recent activity; and conservative uncertainty bounds.
+Prediction runs, feature snapshots, parameters, grid polygons, expected counts,
+intervals, runtime, and validation status are persisted separately from
+clustering. The dashboard adds an optional `七日预测` tab and choropleth map.
+
+**Architecture:** `SHARED_SPATIOTEMPORAL_BASELINE` version 1 is deliberately
+uncalibrated and requires no training. Disease is a grouping dimension, not a
+separate fitted model. The prediction storage/API contract is model-neutral so
+negative-binomial, LightGBM, or XGBoost challengers can be added without changing
+the interface. Predictions never modify source cases, clusters, reports,
+knowledge, or agent output.
+
+**Validation:** 3 focused live-PostGIS tests cover reproducible persisted grid
+forecasts, temporal features and bounds, shared cross-disease behavior, GeoJSON,
+and empty history. Full suite: 100/100 passing, with the existing Starlette
+`TestClient` warning. Database migrated to `20260915_04`. Guangzhou demo and 3
+knowledge documents were restored; prediction run #1 contains 12 disease-grid
+cells and is labelled `SIMULATION_UNVALIDATED`.
+
+**Limitations:** The initial weights and uncertainty interval are engineering
+assumptions, not calibrated epidemiological estimates. Only cells with cases in
+the preceding 28 days are forecast. Synthetic data validates software behavior,
+not real-world accuracy. Population denominators, reporting delays, vaccination,
+weather, mobility, severity, and interventions are not yet modeled.
+
+**Next:** With real history, use rolling-origin backtests to calibrate the
+baseline and compare it with negative-binomial regression and boosted-tree
+challengers. Promote no model until it beats simple baselines by disease,
+geography, horizon, and uncertainty calibration.

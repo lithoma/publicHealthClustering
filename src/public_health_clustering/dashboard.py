@@ -33,6 +33,7 @@ from .models import (
 )
 from .reporting import ClusterReportError, build_cluster_reports, render_cluster_report_html
 from .strategy import StrategyError, build_strategy_context, generate_strategy_brief
+from .prediction import create_prediction, prediction_json
 
 PACKAGE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="Public Health Clustering Explorer")
@@ -87,6 +88,11 @@ class RunRequest(BaseModel):
     illness_filter: str | None = None
     batch_ids: list[int] | None = None
 
+class PredictionRequest(BaseModel):
+    cutoff_date: date
+    target_srid: int = Field(gt=0)
+    grid_size_meters: int = Field(1000, gt=0)
+
 
 def _run_json(run: ClusteringRun) -> dict:
     return {
@@ -116,6 +122,34 @@ def list_runs() -> list[dict]:
             return [_run_json(run) for run in runs]
     finally:
         engine.dispose()
+
+@app.get("/api/predictions")
+def list_predictions() -> list[dict]:
+    engine=create_db_engine()
+    try:
+        with Session(engine) as session:
+            from .models import PredictionRun
+            rows=session.scalars(select(PredictionRun).order_by(PredictionRun.prediction_run_id.desc())).all()
+            return [{"prediction_run_id":r.prediction_run_id,"cutoff_date":r.cutoff_date.isoformat(),"forecast_start":r.forecast_start.isoformat(),"forecast_end":r.forecast_end.isoformat(),"validation_status":r.validation_status,"model_type":r.model_type} for r in rows]
+    finally: engine.dispose()
+
+@app.post("/api/predictions")
+def run_prediction(request: PredictionRequest) -> dict:
+    engine=create_db_engine()
+    try:
+        with Session(engine) as session:
+            run=create_prediction(session,cutoff_date=request.cutoff_date,target_srid=request.target_srid,grid_size_meters=request.grid_size_meters)
+            return prediction_json(session,run.prediction_run_id)
+    finally: engine.dispose()
+
+@app.get("/api/predictions/{run_id}")
+def get_prediction(run_id: int) -> dict:
+    engine=create_db_engine()
+    try:
+        with Session(engine) as session:
+            try: return prediction_json(session,run_id)
+            except ValueError as exc: raise HTTPException(404,str(exc)) from exc
+    finally: engine.dispose()
 
 
 @app.get("/api/cities")

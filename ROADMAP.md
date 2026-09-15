@@ -66,6 +66,23 @@ tests, `PROJECT_LOG.md`, `ARCHITECTURE_DECISIONS.md`, this roadmap, and
 - Cross-model comparison and minimum acceptable response-quality thresholds
 - Resource capacity, vaccination, severity, and population-denominator inputs
 
+## Milestone 8A — Shared seven-day prediction baseline ✅
+
+- Training-free shared model across diseases
+- Configurable metre-based grid and 28-day temporal feature window
+- Seven-day expected counts, uncertainty bounds, and information level
+- Persisted prediction runs, parameters, features, and grid outputs
+- Optional `七日预测` dashboard map isolated from current features
+- Explicit `SIMULATION_UNVALIDATED` status and full regression coverage
+
+## Milestone 8B — Real-data calibration and model comparison ⬜
+
+- Rolling-origin historical backtests and observed-outcome attachment
+- Calibrated shared baseline weights and prediction intervals
+- Negative-binomial count model as the first statistical challenger
+- LightGBM/XGBoost challenger only when sample volume supports it
+- Disease/geography-specific metrics, drift checks, and promotion rules
+
 ## Later work ⬜
 
 - Building/street-level geocoding and coordinate import
