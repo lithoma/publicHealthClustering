@@ -175,8 +175,9 @@ OPENROUTER_MODEL=openrouter/free
 ```
 
 Restart the dashboard after changing `.env`. Requests require structured-output
-support, zero data retention, and denied provider data collection. Free routing
-has low limits and variable availability; a failed privacy-compatible provider
+support and denied provider data collection. Strict zero-data-retention is not
+required because the free pool may have no compatible endpoint; only de-identified
+aggregate context is transmitted. Free routing has low limits and variable availability; a failed compatible provider
 request is reported clearly and does not fall back to template text.
 
 ## Tests

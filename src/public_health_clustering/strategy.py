@@ -127,10 +127,10 @@ def generate_strategy_brief(context: StrategyContext, *, opener=None) -> dict:
     instructions = """你是中国公共卫生聚集事件研判智能体。只根据提供的聚类汇总和知识证据形成中文策略，不得虚构事实、法规或引用。区分观察事实、推断和建议；考虑时间窗口、季节背景、城市级位置、人口学、空间范围、代理位置、数据缺失和历史比较。每项行动的 citations 只能使用输入中的 evidence_id；如果证据不足就写入 additional_information_needed。不要输出患者级信息，不作临床诊断，不宣称空间覆盖范围等于传播边界。"""
     payload = {"model": model, "messages": [{"role": "system", "content": instructions}, {"role": "user", "content": agent_input}],
                "response_format": {"type": "json_schema", "json_schema": {"name": "public_health_strategy", "strict": True, "schema": STRATEGY_SCHEMA}},
-               "provider": {"require_parameters": True, "zdr": True, "data_collection": "deny"}, "temperature": 0.2}
+               "provider": {"require_parameters": True, "data_collection": "deny"}, "temperature": 0.2}
     request = Request("https://openrouter.ai/api/v1/chat/completions", data=json.dumps(payload).encode(),
                       headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json",
-                               "HTTP-Referer": "http://127.0.0.1:8000", "X-Title": "疾病空间聚集观察台"}, method="POST")
+                               "HTTP-Referer": "http://127.0.0.1:8000", "X-Title": "Public Health Clustering Explorer"}, method="POST")
     opener = opener or urlopen
     try:
         with opener(request, timeout=90) as response:

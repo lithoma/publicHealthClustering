@@ -224,6 +224,7 @@ treated as proven continuation of a transmission chain.
 ## Free provider routing is constrained by privacy and schema requirements
 
 The prototype uses `openrouter/free` with strict JSON Schema, required parameter
-support, zero-data-retention routing, and denied provider data collection. This
-favours privacy and parseability over availability. Model identity is returned
+support, and denied provider data collection. Strict ZDR was tested but the free
+pool had no compatible endpoint, so only de-identified aggregate context is sent
+and provider retention remains a documented prototype limitation. Model identity is returned
 to the UI because the free router may select different compatible models.

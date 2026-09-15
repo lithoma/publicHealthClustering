@@ -208,8 +208,10 @@ model assessment level, reasoning summary, prioritized actions and rationales,
 missing information, data-quality warnings, escalation criteria, and citations.
 
 **Architecture:** The initial provider is OpenRouter's `openrouter/free` router.
-Requests demand strict JSON Schema, compatible-provider routing, zero data
-retention, and denied data collection. There is deliberately no rules-based
+Requests demand strict JSON Schema, compatible-provider routing, and denied data
+collection. Strict ZDR was removed after a live free-router request found no
+compatible endpoint; the transmitted context is therefore limited to de-identified
+aggregates. There is deliberately no rules-based
 fallback: missing credentials, provider failure, malformed output, or invented
 citation IDs fail clearly instead of displaying a mechanical strategy.
 
@@ -217,9 +219,13 @@ citation IDs fail clearly instead of displaying a mechanical strategy.
 aggregate-only payload, Guangzhou/秋季 context, strict model response handling,
 citation resolution, missing knowledge, API behavior, and missing-key refusal.
 Combined focused suite: 11/11 passing. Full live-PostGIS suite: 97/97 passing,
-with the existing Starlette `TestClient` warning. Guangzhou demo and all 3
-knowledge documents were restored afterward. A live provider call was not made
-because the key pasted into chat should be revoked rather than reused.
+with the existing Starlette `TestClient` warning. After a replacement key was
+configured locally, a live Guangzhou 麻疹 request succeeded through
+`dots-studio/dots-3-note-preview:free`, returning all required structured fields
+and three valid evidence references. The live check also found and fixed a
+non-ASCII HTTP-header issue and established that the free pool currently has no
+endpoint satisfying both strict ZDR and structured output. Guangzhou demo and
+all 3 knowledge documents were restored after the final test run.
 
 **Limitations:** Free routing is intended for prototyping, has low rate limits,
 variable capacity/model selection, and may have no endpoint satisfying strict

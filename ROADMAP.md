@@ -54,7 +54,7 @@ tests, `PROJECT_LOG.md`, `ARCHITECTURE_DECISIONS.md`, this roadmap, and
 - Required OpenRouter model call with no mechanical fallback
 - Aggregate cluster, season, approximate city, prior-run, and knowledge context
 - Strict structured Chinese output and citation-ID validation
-- Zero-data-retention and denied-data-collection provider routing
+- Denied-data-collection routing with de-identified aggregate payloads
 - Local credential configuration required before live generation
 
 ## Milestone 7E — Knowledge expansion and agent evaluation ⬜
