@@ -11,7 +11,7 @@ import tempfile
 
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -29,6 +29,7 @@ from .models import (
     Patient,
     PatientLocation,
 )
+from .reporting import ClusterReportError, build_cluster_reports, render_cluster_report_html
 
 PACKAGE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="Public Health Clustering Explorer")
@@ -302,6 +303,48 @@ def results(
                 "diseases": [{"name": disease, "color": disease_color(disease)}
                              for disease in diseases],
             }
+    finally:
+        engine.dispose()
+
+
+@app.get("/api/reports/clusters")
+def cluster_reports(run_id: int) -> dict:
+    engine = create_db_engine()
+    try:
+        with Session(engine) as session:
+            try:
+                run, reports, noise = build_cluster_reports(session, run_id)
+            except ClusterReportError as exc:
+                status = 404 if "does not exist" in str(exc) else 409
+                raise HTTPException(status, str(exc)) from exc
+            return {
+                "run": _run_json(run),
+                "clusters": [report.to_dict() for report in reports],
+                "noise": noise,
+            }
+    finally:
+        engine.dispose()
+
+
+@app.get("/reports/clusters/{run_id}/{cluster_id}.html", response_class=HTMLResponse)
+def cluster_report_html(run_id: int, cluster_id: int, download: bool = False) -> HTMLResponse:
+    engine = create_db_engine()
+    try:
+        with Session(engine) as session:
+            try:
+                run, reports, noise = build_cluster_reports(session, run_id)
+            except ClusterReportError as exc:
+                status = 404 if "does not exist" in str(exc) else 409
+                raise HTTPException(status, str(exc)) from exc
+            report = next((item for item in reports if item.cluster_id == cluster_id), None)
+            if report is None:
+                raise HTTPException(404, f"Cluster {cluster_id} does not exist in run {run_id}")
+            headers = {}
+            if download:
+                headers["Content-Disposition"] = (
+                    f'attachment; filename="run-{run_id}-cluster-{cluster_id}-report.html"'
+                )
+            return HTMLResponse(render_cluster_report_html(run, report, noise), headers=headers)
     finally:
         engine.dispose()
 
