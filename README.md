@@ -162,10 +162,22 @@ returns a Chinese brief containing:
 - Conditions that should trigger escalation under local procedures
 
 Generation is read-only, does not rerun clustering, stores no strategy-run
-history, and includes neither patient identifiers nor exact coordinates. The
-current baseline is deterministic and works without a cloud API key. Optional
-model refinement is planned after a provider credential and model are explicitly
-configured; it will preserve the same structured and cited response contract.
+history, and includes neither patient identifiers nor exact coordinates. It is
+performed by a required model call—there is no mechanical fallback. The agent
+also receives calendar season, approximate configured city, analysis parameters,
+data completeness, and a cautious prior-run comparison where available.
+
+Create a free OpenRouter key, then add it only to the ignored local `.env` file:
+
+```text
+OPENROUTER_API_KEY=replace-with-your-new-key
+OPENROUTER_MODEL=openrouter/free
+```
+
+Restart the dashboard after changing `.env`. Requests require structured-output
+support, zero data retention, and denied provider data collection. Free routing
+has low limits and variable availability; a failed privacy-compatible provider
+request is reported clearly and does not fall back to template text.
 
 ## Tests
 
@@ -205,7 +217,8 @@ tests/                    unit and live-PostGIS integration tests
 - No authentication or deployment hardening; the dashboard is local only
 - No SaTScan, forecasting, prediction, or automatic intervention execution
 - No semantic ranking or PDF page-level citations in knowledge search yet
-- No model-refined strategy wording until a provider key/model is configured
+- Free model routing is prototype capacity, not a production availability guarantee
+- Agent quality evaluation and broader local guidance remain planned
 
 See `ROADMAP.md`, `PROJECT_LOG.md`, and `ARCHITECTURE_DECISIONS.md` for milestone
 status, validation history, and long-lived design decisions.

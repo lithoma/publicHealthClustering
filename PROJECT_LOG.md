@@ -195,3 +195,36 @@ behind the same structured strategy contract using stateless API requests.
 **Next:** Add optional model refinement and evaluation only after configuring a
 provider credential/model, then expand the local corpus and page-level citation
 precision.
+### 2026-09-15 — Milestone 7D: Actual model strategy agent
+
+**Implemented:** Replaced the deterministic strategy writer with a required
+OpenRouter model call. The context builder now supplies aggregate cluster
+statistics, analysis parameters, calendar month/season, approximate configured
+city, demographic and location-quality completeness, current disease-matched
+knowledge sections, and the nearest comparable same-disease cluster from a
+prior non-overlapping run when available. Exact coordinates and all direct
+patient identifiers are removed before transmission. The dashboard exposes
+model assessment level, reasoning summary, prioritized actions and rationales,
+missing information, data-quality warnings, escalation criteria, and citations.
+
+**Architecture:** The initial provider is OpenRouter's `openrouter/free` router.
+Requests demand strict JSON Schema, compatible-provider routing, zero data
+retention, and denied data collection. There is deliberately no rules-based
+fallback: missing credentials, provider failure, malformed output, or invented
+citation IDs fail clearly instead of displaying a mechanical strategy.
+
+**Validation:** 4 focused strategy tests use a simulated provider and cover the
+aggregate-only payload, Guangzhou/秋季 context, strict model response handling,
+citation resolution, missing knowledge, API behavior, and missing-key refusal.
+Combined focused suite: 11/11 passing. Full live-PostGIS suite: 97/97 passing,
+with the existing Starlette `TestClient` warning. Guangzhou demo and all 3
+knowledge documents were restored afterward. A live provider call was not made
+because the key pasted into chat should be revoked rather than reused.
+
+**Limitations:** Free routing is intended for prototyping, has low rate limits,
+variable capacity/model selection, and may have no endpoint satisfying strict
+privacy plus structured-output requirements at a given moment. A replacement
+key must be stored only in the ignored local `.env` file.
+
+**Next:** Revoke the exposed key, configure a replacement, run one live strategy
+evaluation, then strengthen knowledge coverage and formal output evaluations.

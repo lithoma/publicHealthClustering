@@ -49,12 +49,20 @@ tests, `PROJECT_LOG.md`, `ARCHITECTURE_DECISIONS.md`, this roadmap, and
 - No separate agent-run history table
 - No automatic execution of external interventions
 
-## Milestone 7D — Optional model refinement and evaluation ⬜
+## Milestone 7D — Model-driven strategy agent ✅
 
-- Configure a model provider credential and model explicitly
-- Refine the structured baseline through stateless model requests
-- Add citation-validity, unsupported-claim, consistency, and safety evaluations
-- Preserve deterministic fallback when the provider is unavailable
+- Required OpenRouter model call with no mechanical fallback
+- Aggregate cluster, season, approximate city, prior-run, and knowledge context
+- Strict structured Chinese output and citation-ID validation
+- Zero-data-retention and denied-data-collection provider routing
+- Local credential configuration required before live generation
+
+## Milestone 7E — Knowledge expansion and agent evaluation ⬜
+
+- Broader national, provincial, and municipal guidance corpus
+- Page/paragraph-level citations and supersession workflows
+- Unsupported-claim, consistency, safety, and expert-quality evaluations
+- Resource capacity, vaccination, severity, and population-denominator inputs
 
 ## Later work ⬜
 

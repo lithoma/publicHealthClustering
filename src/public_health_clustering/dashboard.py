@@ -404,7 +404,11 @@ def cluster_strategy(run_id: int, cluster_id: int) -> dict:
                 raise HTTPException(409, str(exc)) from exc
             except StrategyError as exc:
                 raise HTTPException(404, str(exc)) from exc
-            return generate_strategy_brief(context)
+            try:
+                return generate_strategy_brief(context)
+            except StrategyError as exc:
+                status = 503 if "OPENROUTER_API_KEY" in str(exc) or "服务" in str(exc) else 422
+                raise HTTPException(status, str(exc)) from exc
     finally:
         engine.dispose()
 

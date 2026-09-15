@@ -205,3 +205,25 @@ Actions carry one or more section-level evidence IDs. The response includes the
 matching official document title, version, section, content summary, and source
 URL. Missing matching knowledge is a clear failure rather than permission to
 invent uncited disease guidance.
+## The strategy endpoint requires a real model and has no mechanical fallback
+
+Milestone 7D replaces baseline template generation with an OpenRouter model
+call. If the key, privacy-compatible provider, structured response, or citations
+are invalid, the request fails visibly. A generic template must not be presented
+as agent analysis. The earlier deterministic evidence contract remains useful
+as the input/output boundary, not as a user-facing strategy fallback.
+
+## Agent context is rich at aggregate level and coarse at location level
+
+The model receives cluster person–place–time statistics, season, run parameters,
+data completeness, approximate configured city, current knowledge sections, and
+a cautious prior-run comparison. Exact centroids and all patient-level records
+are removed. Prior clusters are proximity hints only and are explicitly not
+treated as proven continuation of a transmission chain.
+
+## Free provider routing is constrained by privacy and schema requirements
+
+The prototype uses `openrouter/free` with strict JSON Schema, required parameter
+support, zero-data-retention routing, and denied provider data collection. This
+favours privacy and parseability over availability. Model identity is returned
+to the UI because the free router may select different compatible models.
