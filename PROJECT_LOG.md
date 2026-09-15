@@ -26,6 +26,32 @@ Milestone 7B: versioned local prevention knowledge base.
 
 ## Log
 
+### 2026-09-15 — Milestone 7A extension: Person–place–time reporting
+
+**Implemented:** optional `sex` and `age_years` fields are accepted during CSV
+import, normalized/validated, stored on patients and case events, exposed by the
+canonical spatial view, and copied into immutable clustering result snapshots.
+Reports now include age bands, median/range, sex distribution, demographic
+completeness, peak date, and cases in the final three analysis days alongside
+the existing spatial and location-quality measures. Dashboard case rows and
+point popups expose available demographics. Clicking a cluster region opens a
+direct link to its report. The Guangzhou demo populates both demographic fields
+deterministically.
+
+**Architecture:** Migration `20260915_02` adds demographics without making them
+required, preserving old CSVs and legacy rows. Reports organize evidence by
+person, place, and time and do not interpret case proportions as population
+rates without denominators.
+
+**Validation:** Optional-field normalization/range coverage was added to CSV
+tests; reporting tests cover demographic distributions, completeness, and
+person–place–time HTML sections. Full live-PostGIS suite: 90/90 passing, with
+the same pre-existing Starlette `TestClient` deprecation warning. The local
+database was migrated to `20260915_02`; the 66-case Guangzhou demo was restored
+and all three reports were verified with complete age and sex data.
+
+**Next:** Milestone 7B remains the versioned local prevention knowledge base.
+
 ### 2026-09-15 — Milestone 7A: Cluster descriptive reports
 
 **Implemented:** `reporting.py` calculates one read-only report for each

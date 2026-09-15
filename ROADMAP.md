@@ -24,6 +24,9 @@ tests, `PROJECT_LOG.md`, `ARCHITECTURE_DECISIONS.md`, this roadmap, and
 - Deterministic per-cluster temporal, spatial, density, and provenance statistics
 - Run-wide noise summary
 - Dashboard report cards and compact charts
+- Optional age/sex ingestion and immutable demographic snapshots
+- Person–place–time summaries with completeness indicators
+- Direct map-cluster links to the matching report
 - Dependency-free standalone HTML report view/download
 - Focused and full live-PostGIS test coverage
 

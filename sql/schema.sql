@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS patients (
     name TEXT NOT NULL,
     illness TEXT NOT NULL,
     diagnosis_date DATE NOT NULL,
+    sex TEXT CHECK (sex IS NULL OR sex IN ('FEMALE', 'MALE', 'OTHER', 'UNKNOWN')),
+    age_years INTEGER CHECK (age_years IS NULL OR age_years BETWEEN 0 AND 120),
     address_text TEXT,
     community_name TEXT,
     diagnosing_facility_id BIGINT REFERENCES healthcare_facilities(facility_id)
@@ -98,6 +100,8 @@ CREATE TABLE IF NOT EXISTS case_events (
     source_case_id TEXT NOT NULL,
     illness TEXT NOT NULL,
     diagnosis_date DATE NOT NULL,
+    sex TEXT CHECK (sex IS NULL OR sex IN ('FEMALE', 'MALE', 'OTHER', 'UNKNOWN')),
+    age_years INTEGER CHECK (age_years IS NULL OR age_years BETWEEN 0 AND 120),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT case_events_batch_source_unique UNIQUE (batch_id, source_case_id)
 );
@@ -142,6 +146,8 @@ CREATE TABLE IF NOT EXISTS clustering_results (
     cluster_id INTEGER,
     illness_snapshot TEXT NOT NULL,
     diagnosis_date_snapshot DATE NOT NULL,
+    sex_snapshot TEXT CHECK (sex_snapshot IS NULL OR sex_snapshot IN ('FEMALE', 'MALE', 'OTHER', 'UNKNOWN')),
+    age_years_snapshot INTEGER CHECK (age_years_snapshot IS NULL OR age_years_snapshot BETWEEN 0 AND 120),
     location_snapshot geometry(Point, 4326) NOT NULL,
     location_source_snapshot TEXT NOT NULL CHECK (
         location_source_snapshot IN (
@@ -199,6 +205,8 @@ SELECT
     p.patient_id,
     ce.illness,
     ce.diagnosis_date,
+    ce.sex,
+    ce.age_years,
     ce.case_event_id,
     pl.patient_location_id,
     pl.location,
@@ -216,7 +224,7 @@ JOIN patient_locations AS pl
     ON pl.patient_id = p.patient_id
    AND pl.is_current = TRUE
 UNION ALL
-SELECT p.patient_id, p.illness, p.diagnosis_date, NULL::BIGINT AS case_event_id,
+SELECT p.patient_id, p.illness, p.diagnosis_date, p.sex, p.age_years, NULL::BIGINT AS case_event_id,
        pl.patient_location_id, pl.location, pl.location_source, pl.is_proxy,
        pl.community_id, pl.facility_id, pl.resolved_at, p.batch_id,
        COALESCE(db.is_included, TRUE) AS batch_is_included

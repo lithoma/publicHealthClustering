@@ -67,10 +67,13 @@ demo creates 66 cases across three diseases and immediately runs clustering.
 The current patient CSV columns are:
 
 ```text
-patient_id,name,illness,diagnosis_date,address_text,community_name,diagnosing_facility_code
+patient_id,name,illness,diagnosis_date,address_text,community_name,diagnosing_facility_code,sex,age_years
 ```
 
-Dates must use `YYYY-MM-DD`. The dashboard validates the complete file before
+The `sex` and `age_years` columns are optional for backward compatibility.
+Accepted sex values are `FEMALE`, `MALE`, `OTHER`, and `UNKNOWN`, plus `F`,
+`M`, `女`, `男`, `其他`, and `未知`. Age must be a whole number from 0 through
+120. Dates must use `YYYY-MM-DD`. The dashboard validates the complete file before
 enabling confirmation. A confirmed file becomes a named batch that can be
 included or excluded from later runs. A batch referenced by clustering results
 cannot be deleted through the dashboard.
@@ -104,6 +107,9 @@ The `Cluster 报告` tab summarizes every non-noise cluster in a completed run:
 - Case and proxy counts
 - First/last diagnosis date and active-day span
 - Daily case counts
+- Peak diagnosis date and cases in the final three analysis days
+- Age completeness, median/range, and policy-oriented age bands
+- Sex completeness and distribution
 - Location-source distribution
 - WGS84 centroid
 - Mean, median, and maximum distance to the centroid
@@ -112,8 +118,13 @@ The `Cluster 报告` tab summarizes every non-noise cluster in a completed run:
 
 Coverage area is the union of `eps_meters` buffers around the cluster's cases.
 It is a descriptive visualization footprint, not an administrative boundary or
-a claimed transmission zone. Each full report is dependency-free HTML that can
+a claimed transmission zone. Age and sex summaries are case distributions, not
+population attack rates; rates require appropriate population denominators.
+Each full report is dependency-free HTML that can
 be opened in a new tab, downloaded, or printed to PDF from the browser.
+
+Clicking a translucent cluster region opens a popup with a direct link to that
+cluster's full report.
 
 ## Tests
 

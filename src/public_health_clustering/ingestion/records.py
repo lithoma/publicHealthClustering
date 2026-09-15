@@ -42,6 +42,8 @@ class RawPatientRow:
     address_text: str
     community_name: str
     diagnosing_facility_code: str
+    sex: str = ""
+    age_years: str = ""
 
 
 @dataclass(frozen=True)
@@ -76,3 +78,5 @@ class ValidatedPatient:
     community_name: str
     # Presence/format-validated only; not yet resolved against the database.
     diagnosing_facility_code: str
+    sex: str | None = None
+    age_years: int | None = None

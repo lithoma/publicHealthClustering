@@ -246,6 +246,8 @@ def _upsert_patient(session: Session, record: ValidatedPatient) -> ImportOutcome
                         address_text=address_text,
                         community_name=community_name,
                         diagnosing_facility_id=facility_id,
+                        sex=record.sex,
+                        age_years=record.age_years,
                     )
                 )
                 session.flush()
@@ -258,6 +260,8 @@ def _upsert_patient(session: Session, record: ValidatedPatient) -> ImportOutcome
                 or existing.address_text != address_text
                 or existing.community_name != community_name
                 or existing.diagnosing_facility_id != facility_id
+                or existing.sex != record.sex
+                or existing.age_years != record.age_years
             )
             if not changed:
                 return ImportOutcome(record.patient_id, ImportAction.UNCHANGED)
@@ -268,6 +272,8 @@ def _upsert_patient(session: Session, record: ValidatedPatient) -> ImportOutcome
             existing.address_text = address_text
             existing.community_name = community_name
             existing.diagnosing_facility_id = facility_id
+            existing.sex = record.sex
+            existing.age_years = record.age_years
             session.flush()
             return ImportOutcome(record.patient_id, ImportAction.UPDATED)
     except SQLAlchemyError as exc:
@@ -293,11 +299,14 @@ def import_patients(
                     batch_id=batch.batch_id, patient_id=record.patient_id,
                     source_case_id=record.patient_id, illness=record.illness,
                     diagnosis_date=record.diagnosis_date,
+                    sex=record.sex, age_years=record.age_years,
                 ))
                 session.flush()
             else:
                 event.illness = record.illness
                 event.diagnosis_date = record.diagnosis_date
+                event.sex = record.sex
+                event.age_years = record.age_years
         outcomes.append(outcome)
     return ImportBatchResult(outcomes)
 

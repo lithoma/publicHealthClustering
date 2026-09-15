@@ -61,7 +61,8 @@ def _run(session: Session, status=ClusteringRunStatus.COMPLETED) -> ClusteringRu
 
 
 def _result(session: Session, run: ClusteringRun, suffix: str, lon: float, lat: float,
-            *, cluster_id: int | None, day: int, proxy: bool = False, illness: str = "麻疹"):
+            *, cluster_id: int | None, day: int, proxy: bool = False, illness: str = "麻疹",
+            sex: str | None = None, age_years: int | None = None):
     facility = None
     if proxy:
         facility = HealthcareFacility(
@@ -76,6 +77,7 @@ def _result(session: Session, run: ClusteringRun, suffix: str, lon: float, lat: 
     patient = Patient(
         patient_id=f"REPORT-{suffix}", name="合成病例", illness=illness,
         diagnosis_date=date(2026, 9, day), diagnosing_facility=facility,
+        sex=sex, age_years=age_years,
     )
     session.add(patient)
     session.flush()
@@ -96,6 +98,7 @@ def _result(session: Session, run: ClusteringRun, suffix: str, lon: float, lat: 
         cluster_id=cluster_id,
         illness_snapshot=illness,
         diagnosis_date_snapshot=date(2026, 9, day),
+        sex_snapshot=sex, age_years_snapshot=age_years,
         location_snapshot=f"SRID=4326;POINT({lon} {lat})",
         location_source_snapshot=LocationSource.FACILITY_PROXY if proxy else LocationSource.MANUAL,
         is_proxy_snapshot=proxy,
@@ -104,9 +107,12 @@ def _result(session: Session, run: ClusteringRun, suffix: str, lon: float, lat: 
 
 def test_cluster_report_calculates_statistics_and_noise_from_snapshots(db_session):
     run = _run(db_session)
-    _result(db_session, run, "A", 113.2644, 23.1291, cluster_id=7, day=4)
-    _result(db_session, run, "B", 113.2650, 23.1291, cluster_id=7, day=4, proxy=True)
-    _result(db_session, run, "C", 113.2647, 23.1297, cluster_id=7, day=6)
+    _result(db_session, run, "A", 113.2644, 23.1291, cluster_id=7, day=4,
+            sex="FEMALE", age_years=8)
+    _result(db_session, run, "B", 113.2650, 23.1291, cluster_id=7, day=4, proxy=True,
+            sex="MALE", age_years=12)
+    _result(db_session, run, "C", 113.2647, 23.1297, cluster_id=7, day=6,
+            sex="FEMALE", age_years=40)
     _result(db_session, run, "NOISE", 113.31, 23.18, cluster_id=None, day=8)
     db_session.flush()
 
@@ -129,6 +135,17 @@ def test_cluster_report_calculates_statistics_and_noise_from_snapshots(db_sessio
         {"date": "2026-09-04", "case_count": 2},
         {"date": "2026-09-06", "case_count": 1},
     ]
+    assert report.median_age_years == 12
+    assert report.age_group_counts == [
+        {"age_group": "5–14", "case_count": 2},
+        {"age_group": "25–44", "case_count": 1},
+    ]
+    assert report.sex_counts == [
+        {"sex": "FEMALE", "case_count": 2},
+        {"sex": "MALE", "case_count": 1},
+    ]
+    assert report.peak_diagnosis_date == date(2026, 9, 4)
+    assert report.recent_three_day_cases == 0
     assert noise == {
         "case_count": 1,
         "proxy_case_count": 0,
@@ -151,7 +168,9 @@ def test_report_api_and_standalone_html_export(db_session):
     assert response.status_code == 200
     assert response.headers["content-disposition"].startswith("attachment;")
     assert "<!doctype html>" in response.text
-    assert "Cases by diagnosis date" in response.text
+    assert "Time: cases by diagnosis date" in response.text
+    assert "Person: age groups" in response.text
+    assert "Person: sex" in response.text
     assert "Coverage area is the union" in response.text
     assert client.get(f"/reports/clusters/{run.run_id}/999.html").status_code == 404
 

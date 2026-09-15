@@ -371,6 +371,36 @@ def validate_patients(
         # Presence only — format/content beyond that, and resolving this
         # against known facilities, happen in a later milestone.
 
+        sex_aliases = {
+            "F": "FEMALE", "FEMALE": "FEMALE", "女": "FEMALE",
+            "M": "MALE", "MALE": "MALE", "男": "MALE",
+            "OTHER": "OTHER", "其他": "OTHER",
+            "UNKNOWN": "UNKNOWN", "未知": "UNKNOWN",
+        }
+        raw_sex = row.sex.strip().upper()
+        sex = sex_aliases.get(raw_sex) if raw_sex else None
+        if raw_sex and sex is None:
+            row_errors.append(ValidationError(
+                ValidationErrorCode.INVALID_VALUE, source, row.row_number, "sex",
+                "expected FEMALE, MALE, OTHER, UNKNOWN, F, M, 女, 男, 其他, or 未知",
+            ))
+        age_years = None
+        raw_age = row.age_years.strip()
+        if raw_age:
+            try:
+                age_years = int(raw_age)
+            except ValueError:
+                row_errors.append(ValidationError(
+                    ValidationErrorCode.INVALID_NUMBER, source, row.row_number,
+                    "age_years", "expected a whole number",
+                ))
+            else:
+                if not 0 <= age_years <= 120:
+                    row_errors.append(ValidationError(
+                        ValidationErrorCode.OUT_OF_RANGE, source, row.row_number,
+                        "age_years", "must be between 0 and 120",
+                    ))
+
         if row_errors:
             errors.extend(row_errors)
             continue
@@ -386,6 +416,8 @@ def validate_patients(
                 address_text=row.address_text,
                 community_name=row.community_name,
                 diagnosing_facility_code=row.diagnosing_facility_code,
+                sex=sex,
+                age_years=age_years,
             )
         )
 

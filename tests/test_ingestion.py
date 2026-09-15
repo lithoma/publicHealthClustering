@@ -99,6 +99,22 @@ def test_blank_diagnosing_facility_code_is_not_an_error() -> None:
     assert any(p.diagnosing_facility_code == "" for p in valid)
 
 
+def test_optional_demographics_are_normalized_and_validated(tmp_path: Path) -> None:
+    csv_path = tmp_path / "demographics.csv"
+    csv_path.write_text(
+        "patient_id,name,illness,diagnosis_date,address_text,community_name,diagnosing_facility_code,sex,age_years\n"
+        "D-1,Case 1,Measles,2026-09-10,,,,女,8\n"
+        "D-2,Case 2,Measles,2026-09-10,,,,M,121\n",
+        encoding="utf-8",
+    )
+    valid, errors = load_patients(csv_path)
+    assert len(valid) == 1
+    assert valid[0].sex == "FEMALE"
+    assert valid[0].age_years == 8
+    assert len(errors) == 1
+    assert errors[0].field == "age_years"
+
+
 def test_invalid_community_coordinates_are_rejected() -> None:
     valid, errors = load_communities(FIXTURES_DIR / "communities_invalid_coordinates.csv")
 

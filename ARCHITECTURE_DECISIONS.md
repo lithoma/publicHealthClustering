@@ -143,3 +143,19 @@ user without a required human-approval workflow. It will not introduce a
 separate database table for agent-run history. Its factual inputs remain
 persisted clustering runs, deterministic reports, and versioned knowledge-base
 documents; it must not automatically execute public-health interventions.
+
+## Demographics belong to case events and immutable analytical snapshots
+
+Age and sex are optional case-level attributes because one subject can appear in
+multiple imported event batches. Clustering copies them into
+`clustering_results` so historical reports remain reproducible after source
+records change. Reports always expose demographic completeness and present
+counts/distributions only; they do not label a group as higher risk without an
+appropriate population denominator.
+
+## Cluster reports prioritize person, place, and time
+
+Report structure follows field-epidemiology practice: time is represented by
+the diagnosis curve, peak, and recent activity; place by spatial extent,
+density, centroid, and location precision; person by age and sex distributions.
+Operationally useful missingness is shown alongside every demographic summary.

@@ -33,6 +33,7 @@ PATIENT_COLUMNS = (
     "community_name",
     "diagnosing_facility_code",
 )
+PATIENT_OPTIONAL_COLUMNS = ("sex", "age_years")
 
 
 def _file_error(source: str, message: str) -> ValidationError:
@@ -167,6 +168,8 @@ def parse_patients_csv(path: Path) -> tuple[list[RawPatientRow], list[Validation
             address_text=row["address_text"],
             community_name=row["community_name"],
             diagnosing_facility_code=row["diagnosing_facility_code"],
+            sex=row.get("sex", ""),
+            age_years=row.get("age_years", ""),
         )
         for row_number, row in rows
     ]

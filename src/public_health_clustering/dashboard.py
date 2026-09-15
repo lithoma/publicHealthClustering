@@ -254,6 +254,8 @@ def results(
                 "patient_id": row.ClusteringResult.patient_id,
                 "illness": row.ClusteringResult.illness_snapshot,
                 "diagnosis_date": row.ClusteringResult.diagnosis_date_snapshot.isoformat(),
+                "sex": row.ClusteringResult.sex_snapshot,
+                "age_years": row.ClusteringResult.age_years_snapshot,
                 "cluster_id": row.ClusteringResult.cluster_id,
                 "cluster_label": "Noise" if row.ClusteringResult.cluster_id is None else f"Cluster {row.ClusteringResult.cluster_id}",
                 "color": disease_color(row.ClusteringResult.illness_snapshot),
@@ -392,7 +394,19 @@ def load_demo(city: str = "guangzhou") -> dict:
                 center_lat = config["latitude"] + lat_offset
                 for index in range(count):
                     patient_id = f"CN-{city.upper()}-{group_index + 1}-{index + 1:03d}"
-                    if session.get(Patient, patient_id) is not None:
+                    sex = "FEMALE" if index % 2 == 0 else "MALE"
+                    age_years = (index * 7 + group_index * 11) % 78
+                    existing = session.get(Patient, patient_id)
+                    if existing is not None:
+                        existing.sex = sex
+                        existing.age_years = age_years
+                        event = session.scalar(select(CaseEvent).where(
+                            CaseEvent.batch_id == batch.batch_id,
+                            CaseEvent.source_case_id == patient_id,
+                        ))
+                        if event is not None:
+                            event.sex = sex
+                            event.age_years = age_years
                         continue
                     angle = rng.random() * 6.283185307
                     radius = (rng.random() ** 0.6) * 0.006
@@ -404,6 +418,8 @@ def load_demo(city: str = "guangzhou") -> dict:
                         illness=illness,
                         diagnosis_date=date(2026, 9, 4 + index % 7),
                         batch_id=batch.batch_id,
+                        sex=sex,
+                        age_years=age_years,
                     )
                     session.add(patient)
                     session.flush()
@@ -418,6 +434,8 @@ def load_demo(city: str = "guangzhou") -> dict:
                         batch_id=batch.batch_id, patient_id=patient_id,
                         source_case_id=patient_id, illness=illness,
                         diagnosis_date=patient.diagnosis_date,
+                        sex=sex,
+                        age_years=age_years,
                     ))
             batch_id = batch.batch_id
             session.commit()

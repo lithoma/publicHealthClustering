@@ -166,12 +166,18 @@ class DataBatch(Base):
 
 class Patient(Base):
     __tablename__ = "patients"
-    __table_args__ = (Index("patients_diagnosis_illness_idx", "diagnosis_date", "illness"),)
+    __table_args__ = (
+        CheckConstraint("sex IS NULL OR sex IN ('FEMALE', 'MALE', 'OTHER', 'UNKNOWN')"),
+        CheckConstraint("age_years IS NULL OR age_years BETWEEN 0 AND 120"),
+        Index("patients_diagnosis_illness_idx", "diagnosis_date", "illness"),
+    )
 
     patient_id: Mapped[str] = mapped_column(Text, primary_key=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     illness: Mapped[str] = mapped_column(Text, nullable=False)
     diagnosis_date: Mapped[date] = mapped_column(Date, nullable=False)
+    sex: Mapped[str | None] = mapped_column(Text)
+    age_years: Mapped[int | None] = mapped_column(Integer)
     address_text: Mapped[str | None] = mapped_column(Text)
     community_name: Mapped[str | None] = mapped_column(Text)
     diagnosing_facility_id: Mapped[int | None] = mapped_column(
@@ -207,6 +213,8 @@ class CaseEvent(Base):
     __tablename__ = "case_events"
     __table_args__ = (
         UniqueConstraint("batch_id", "source_case_id", name="case_events_batch_source_unique"),
+        CheckConstraint("sex IS NULL OR sex IN ('FEMALE', 'MALE', 'OTHER', 'UNKNOWN')"),
+        CheckConstraint("age_years IS NULL OR age_years BETWEEN 0 AND 120"),
         Index("case_events_batch_idx", "batch_id"),
         Index("case_events_patient_idx", "patient_id"),
     )
@@ -223,6 +231,8 @@ class CaseEvent(Base):
     source_case_id: Mapped[str] = mapped_column(Text, nullable=False)
     illness: Mapped[str] = mapped_column(Text, nullable=False)
     diagnosis_date: Mapped[date] = mapped_column(Date, nullable=False)
+    sex: Mapped[str | None] = mapped_column(Text)
+    age_years: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False
     )
@@ -379,6 +389,8 @@ class ClusteringResult(Base):
             "('COMMUNITY_REFERENCE', 'PATIENT_ADDRESS_GEOCODE', 'FACILITY_PROXY', "
             "'MANUAL', 'OTHER')"
         ),
+        CheckConstraint("sex_snapshot IS NULL OR sex_snapshot IN ('FEMALE', 'MALE', 'OTHER', 'UNKNOWN')"),
+        CheckConstraint("age_years_snapshot IS NULL OR age_years_snapshot BETWEEN 0 AND 120"),
         CheckConstraint(
             "(location_source_snapshot = 'FACILITY_PROXY' AND is_proxy_snapshot = TRUE) "
             "OR (location_source_snapshot <> 'FACILITY_PROXY' AND is_proxy_snapshot = FALSE)",
@@ -413,6 +425,8 @@ class ClusteringResult(Base):
     cluster_id: Mapped[int | None] = mapped_column(Integer)
     illness_snapshot: Mapped[str] = mapped_column(Text, nullable=False)
     diagnosis_date_snapshot: Mapped[date] = mapped_column(Date, nullable=False)
+    sex_snapshot: Mapped[str | None] = mapped_column(Text)
+    age_years_snapshot: Mapped[int | None] = mapped_column(Integer)
     location_snapshot: Mapped[WKBElement] = mapped_column(
         Geometry(geometry_type="POINT", srid=4326, spatial_index=False), nullable=False
     )
