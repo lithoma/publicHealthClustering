@@ -183,3 +183,25 @@ Initial entries are concise Chinese summaries linked to current official source
 documents. They are not copied wholesale and do not replace the official text,
 clinical judgment, statutory reporting duties, or local response procedures.
 The UI exposes the source link and status so users can verify currency.
+## Strategy generation starts with a deterministic evidence contract
+
+The strategy workflow first constructs a typed context from one immutable
+cluster report and current disease-matched knowledge sections. Its baseline
+output is deterministic: assessment, prioritized actions, limitations,
+escalation criteria, and source-backed evidence. This provides useful behavior
+without a cloud credential and creates a stable contract for later model
+refinement and evaluation.
+
+## Strategy context excludes direct identifiers and exact coordinates
+
+Only aggregate report measures and curated knowledge sections enter strategy
+generation. Patient IDs, names, addresses, and exact case coordinates are not
+included. No separate strategy-run table is created, and generating a brief
+does not alter analytical or knowledge rows.
+
+## Every strategy action must resolve to retrieved evidence
+
+Actions carry one or more section-level evidence IDs. The response includes the
+matching official document title, version, section, content summary, and source
+URL. Missing matching knowledge is a clear failure rather than permission to
+invent uncited disease guidance.

@@ -163,3 +163,35 @@ rank results semantically or cite page numbers inside PDFs.
 
 **Next:** Milestone 7C can retrieve these versioned sections alongside a
 deterministic cluster report to generate a cited Chinese prevention strategy.
+### 2026-09-15 — Milestone 7C: Evidence-grounded prevention strategy workflow
+
+**Implemented:** Added a read-only strategy service that combines one persisted
+cluster report with matching current Chinese knowledge sections. The dashboard
+now offers `生成防控策略` on every cluster and renders a Chinese assessment,
+time-ordered priorities, data-quality cautions, escalation conditions, and
+clickable evidence references. It sends no patient identifiers or exact
+coordinates, writes no agent-run history, requires no approval gate, and never
+executes an intervention.
+
+**Architecture:** The first production-safe generator is deterministic and
+works without a cloud API key. This separates evidence retrieval and safety
+constraints from future model wording/refinement. Each recommendation carries
+explicit knowledge-section IDs resolved to source title, version, and official
+URL. Aggregate report facts and retrieved evidence are the only inputs.
+
+**Validation:** 3 focused strategy tests cover aggregate-only context,
+source-backed citations, missing-knowledge failure, and API output. Strategy,
+reporting, and knowledge focused suite: 10/10 passing. Full live-PostGIS suite:
+96/96 passing, with one existing Starlette `TestClient` deprecation warning.
+The Guangzhou demo was restored with 66 cases and 3 clusters; all three cluster
+strategies returned successfully with 3 evidence sections each.
+
+**Limitations:** The current generator is rules-based rather than model-refined
+because no OpenAI API key/model is configured locally. It does not infer causal
+links, optimize resources, incorporate population denominators, or replace
+official/local professional judgment. Model refinement can be added later
+behind the same structured strategy contract using stateless API requests.
+
+**Next:** Add optional model refinement and evaluation only after configuring a
+provider credential/model, then expand the local corpus and page-level citation
+precision.

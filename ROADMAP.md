@@ -39,13 +39,22 @@ tests, `PROJECT_LOG.md`, `ARCHITECTURE_DECISIONS.md`, this roadmap, and
 - Chinese standalone cluster reports and dashboard report language
 - No strategy generation in this milestone
 
-## Milestone 7C — Prevention strategy agent ⬜
+## Milestone 7C — Prevention strategy agent ✅
 
 - Combine deterministic cluster reports with retrieved local guidance
 - Produce structured, cited prevention recommendations automatically
+- Chinese assessment, prioritized actions, limitations, and escalation criteria
+- Aggregate-only context without patient identifiers or exact coordinates
 - No mandatory human-approval gate
 - No separate agent-run history table
 - No automatic execution of external interventions
+
+## Milestone 7D — Optional model refinement and evaluation ⬜
+
+- Configure a model provider credential and model explicitly
+- Refine the structured baseline through stateless model requests
+- Add citation-validity, unsupported-claim, consistency, and safety evaluations
+- Preserve deterministic fallback when the provider is unavailable
 
 ## Later work ⬜
 

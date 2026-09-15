@@ -32,6 +32,7 @@ from .models import (
     PatientLocation,
 )
 from .reporting import ClusterReportError, build_cluster_reports, render_cluster_report_html
+from .strategy import StrategyError, build_strategy_context, generate_strategy_brief
 
 PACKAGE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="Public Health Clustering Explorer")
@@ -388,6 +389,22 @@ def cluster_report_html(run_id: int, cluster_id: int, download: bool = False) ->
                     f'attachment; filename="run-{run_id}-cluster-{cluster_id}-report.html"'
                 )
             return HTMLResponse(render_cluster_report_html(run, report, noise), headers=headers)
+    finally:
+        engine.dispose()
+
+
+@app.post("/api/strategies/clusters/{run_id}/{cluster_id}")
+def cluster_strategy(run_id: int, cluster_id: int) -> dict:
+    engine = create_db_engine()
+    try:
+        with Session(engine) as session:
+            try:
+                context = build_strategy_context(session, run_id, cluster_id)
+            except ClusterReportError as exc:
+                raise HTTPException(409, str(exc)) from exc
+            except StrategyError as exc:
+                raise HTTPException(404, str(exc)) from exc
+            return generate_strategy_brief(context)
     finally:
         engine.dispose()
 

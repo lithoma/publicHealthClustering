@@ -18,6 +18,7 @@ not yet geocode free-text addresses or generate AI prevention strategies.
 - Interactive cluster areas, case markers, noise, proxies, disease filters, and data table
 - Per-cluster descriptive statistics, compact charts, and standalone HTML reports
 - Versioned Chinese disease-prevention knowledge with official source links
+- Automatic Chinese cluster strategy briefs with section-level evidence references
 - Alembic-managed schema evolution
 
 ## Prerequisites
@@ -59,6 +60,7 @@ Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/). The dashboard provides:
 - `数据`: persisted case-level results for the selected run
 - `聚类报告`: one Chinese descriptive report per cluster
 - `防控知识库`: searchable Chinese guidance summaries and official sources
+- `聚类报告`: generate an evidence-grounded prevention strategy for any cluster
 - `导入数据`: CSV preview and confirmed batch import
 
 If the database is empty, select Guangzhou and load its synthetic demo. The
@@ -147,6 +149,24 @@ These summaries support evidence retrieval and must be checked against the linke
 official text. They do not replace clinical judgment, reporting obligations, or
 local response procedures.
 
+## Prevention strategy briefs
+
+From `聚类报告`, select `生成防控策略` for a cluster. The service combines its
+persisted aggregate report with current, disease-matched knowledge sections and
+returns a Chinese brief containing:
+
+- A concise person–place–time assessment
+- Immediate, 24-hour, and continuing priorities
+- Section-level evidence IDs and clickable official sources
+- Demographic completeness and spatial-interpretation cautions
+- Conditions that should trigger escalation under local procedures
+
+Generation is read-only, does not rerun clustering, stores no strategy-run
+history, and includes neither patient identifiers nor exact coordinates. The
+current baseline is deterministic and works without a cloud API key. Optional
+model refinement is planned after a provider credential and model are explicitly
+configured; it will preserve the same structured and cited response contract.
+
 ## Tests
 
 Start the local PostGIS service, then run:
@@ -170,6 +190,7 @@ src/public_health_clustering/
   knowledge_base.py      versioned Chinese knowledge retrieval and seed content
   models.py              SQLAlchemy ORM models
   reporting.py           deterministic cluster statistics and HTML reports
+  strategy.py            cited Chinese prevention-strategy assembly
   visualization.py       standalone Folium run maps
   web/dashboard.html     local dashboard interface
 migrations/              Alembic migrations
@@ -184,7 +205,7 @@ tests/                    unit and live-PostGIS integration tests
 - No authentication or deployment hardening; the dashboard is local only
 - No SaTScan, forecasting, prediction, or automatic intervention execution
 - No semantic ranking or PDF page-level citations in knowledge search yet
-- Evidence-grounded prevention strategy generation begins in Milestone 7C
+- No model-refined strategy wording until a provider key/model is configured
 
 See `ROADMAP.md`, `PROJECT_LOG.md`, and `ARCHITECTURE_DECISIONS.md` for milestone
 status, validation history, and long-lived design decisions.
