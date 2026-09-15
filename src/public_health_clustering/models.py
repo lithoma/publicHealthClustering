@@ -57,6 +57,14 @@ class ClusteringRunStatus(enum.StrEnum):
     FAILED = "FAILED"
 
 
+class KnowledgeDocumentStatus(enum.StrEnum):
+    """Lifecycle state for curated disease-knowledge documents."""
+
+    CURRENT = "CURRENT"
+    SUPERSEDED = "SUPERSEDED"
+    DRAFT = "DRAFT"
+
+
 class StrEnumText(TypeDecorator):
     """Persists a Python StrEnum as TEXT, matching a TEXT + CHECK column in the schema.
 
@@ -443,3 +451,53 @@ class ClusteringResult(Base):
     patient_location: Mapped[PatientLocation] = relationship(
         back_populates="clustering_results", viewonly=True
     )
+
+
+class KnowledgeDocument(Base):
+    __tablename__ = "knowledge_documents"
+    __table_args__ = (
+        CheckConstraint("status IN ('CURRENT', 'SUPERSEDED', 'DRAFT')"),
+        UniqueConstraint("source_url", "version_label", name="knowledge_documents_source_version_unique"),
+        Index("knowledge_documents_disease_status_idx", "disease", "status"),
+    )
+
+    document_id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    disease: Mapped[str] = mapped_column(Text, nullable=False)
+    title_zh: Mapped[str] = mapped_column(Text, nullable=False)
+    issuing_body: Mapped[str] = mapped_column(Text, nullable=False)
+    jurisdiction: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'中国'"))
+    publication_date: Mapped[date] = mapped_column(Date, nullable=False)
+    effective_from: Mapped[date | None] = mapped_column(Date)
+    effective_to: Mapped[date | None] = mapped_column(Date)
+    version_label: Mapped[str] = mapped_column(Text, nullable=False)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[KnowledgeDocumentStatus] = mapped_column(
+        StrEnumText(KnowledgeDocumentStatus), nullable=False,
+        default=KnowledgeDocumentStatus.CURRENT, server_default=text("'CURRENT'")
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False)
+    sections: Mapped[list["KnowledgeSection"]] = relationship(
+        back_populates="document", cascade="all, delete-orphan", passive_deletes=True,
+        order_by="KnowledgeSection.sort_order"
+    )
+
+
+class KnowledgeSection(Base):
+    __tablename__ = "knowledge_sections"
+    __table_args__ = (
+        CheckConstraint("sort_order >= 0"),
+        UniqueConstraint("document_id", "sort_order", name="knowledge_sections_document_order_unique"),
+        Index("knowledge_sections_document_idx", "document_id"),
+    )
+
+    section_id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    document_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("knowledge_documents.document_id", onupdate="CASCADE", ondelete="CASCADE"), nullable=False
+    )
+    section_title_zh: Mapped[str] = mapped_column(Text, nullable=False)
+    content_zh: Mapped[str] = mapped_column(Text, nullable=False)
+    keywords_zh: Mapped[str | None] = mapped_column(Text)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False)
+    document: Mapped[KnowledgeDocument] = relationship(back_populates="sections")

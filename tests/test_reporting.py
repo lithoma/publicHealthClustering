@@ -168,10 +168,12 @@ def test_report_api_and_standalone_html_export(db_session):
     assert response.status_code == 200
     assert response.headers["content-disposition"].startswith("attachment;")
     assert "<!doctype html>" in response.text
-    assert "Time: cases by diagnosis date" in response.text
-    assert "Person: age groups" in response.text
-    assert "Person: sex" in response.text
-    assert "Coverage area is the union" in response.text
+    assert 'lang="zh-CN"' in response.text
+    assert "时间：按诊断日期统计" in response.text
+    assert "人群：年龄组" in response.text
+    assert "人群：性别" in response.text
+    assert "覆盖面积为聚类病例" in response.text
+    assert "病例数" in response.text
     assert client.get(f"/reports/clusters/{run.run_id}/999.html").status_code == 404
 
 

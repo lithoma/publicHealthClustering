@@ -30,11 +30,13 @@ tests, `PROJECT_LOG.md`, `ARCHITECTURE_DECISIONS.md`, this roadmap, and
 - Dependency-free standalone HTML report view/download
 - Focused and full live-PostGIS test coverage
 
-## Milestone 7B — Local prevention knowledge base ⬜
+## Milestone 7B — Local prevention knowledge base ✅
 
-- Versioned local document ingestion and parsing
-- Disease, jurisdiction, effective-date, and document-status metadata
-- Search and retrieval with source/page citations
+- Versioned Chinese documents and section-level structured content
+- Disease, jurisdiction, effective-date, issuing-body, and status metadata
+- Chinese keyword search, disease filtering, API retrieval, and official source links
+- Dashboard knowledge view for 麻疹、百日咳、流感
+- Chinese standalone cluster reports and dashboard report language
 - No strategy generation in this milestone
 
 ## Milestone 7C — Prevention strategy agent ⬜

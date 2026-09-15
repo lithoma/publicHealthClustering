@@ -132,3 +132,34 @@ Guangzhou synthetic demo.
 **Implemented:** Python package scaffold, Docker Compose PostgreSQL/PostGIS service, initial database schema (`sql/schema.sql` — six tables plus the `current_patient_spatial_points` view).
 
 **Validation:** schema applied cleanly to a fresh container volume; `docker compose ps` reported healthy.
+### 2026-09-15 — Milestone 7B: 中文疾病防控知识库
+
+**Implemented:** All generated cluster-report headings, labels, demographic
+categories, location-source categories, explanatory notes, and dashboard report
+language are now Chinese. Added versioned `knowledge_documents` and
+`knowledge_sections` tables, ORM models, migration `20260915_03`, an idempotent
+curated seed, Chinese substring search, disease/status filtering, JSON APIs, and
+a dashboard `防控知识库` view. Initial records cover 麻疹、百日咳、流感 and retain
+the issuing body, publication date, version, status, and official source URL.
+
+**Architecture:** Knowledge summaries are structured into searchable Chinese
+sections and remain traceable to official documents. The database preserves
+document versions and lifecycle status. PostgreSQL substring search is used
+instead of built-in full-text search because its default tokenization does not
+provide reliable Chinese word segmentation. This milestone retrieves evidence
+only and does not generate strategies.
+
+**Validation:** 3 focused knowledge-base tests cover idempotent seeding, Chinese
+content, section search, disease filtering, API output, and missing documents;
+updated reporting coverage verifies Chinese standalone HTML. Full live-PostGIS
+suite: 93/93 passing, with one existing Starlette `TestClient` deprecation
+warning. The database is at `20260915_03`; the 66-case Guangzhou demo, 3
+clusters, and 3 knowledge documents were restored after testing.
+
+**Limitations:** Initial summaries are curated starting content, not a complete
+catalog of national or local guidance. Effective-date fields are available but
+require source-specific population. Search is substring based and does not yet
+rank results semantically or cite page numbers inside PDFs.
+
+**Next:** Milestone 7C can retrieve these versioned sections alongside a
+deterministic cluster report to generate a cited Chinese prevention strategy.

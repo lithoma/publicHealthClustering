@@ -159,3 +159,27 @@ Report structure follows field-epidemiology practice: time is represented by
 the diagnosis curve, peak, and recent activity; place by spatial extent,
 density, centroid, and location precision; person by age and sex distributions.
 Operationally useful missingness is shown alongside every demographic summary.
+## Disease knowledge is local, Chinese, versioned, and source-traceable
+
+Operational summaries are stored as Chinese document and section records rather
+than embedded in prompts or UI code. Every document retains disease,
+jurisdiction, issuing body, publication date, version, lifecycle status, and an
+official source URL. Updates create or mark versions rather than silently
+overwriting provenance. This makes later agent retrieval inspectable without a
+separate agent-run history table.
+
+## Chinese knowledge search uses deterministic substring matching initially
+
+The first retrieval layer searches disease, title, issuer, section title,
+content, and keywords with PostgreSQL case-insensitive substring matching.
+Default PostgreSQL full-text tokenization is not used because it does not offer
+reliable Chinese segmentation without an extension. The small curated corpus
+does not yet justify an external search service or embedding index; either can
+be added later behind the same service boundary.
+
+## Knowledge content supports decisions but does not become clinical authority
+
+Initial entries are concise Chinese summaries linked to current official source
+documents. They are not copied wholesale and do not replace the official text,
+clinical judgment, statutory reporting duties, or local response procedures.
+The UI exposes the source link and status so users can verify currency.

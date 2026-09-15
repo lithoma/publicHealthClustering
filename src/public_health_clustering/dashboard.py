@@ -20,12 +20,14 @@ from .clustering import ClusteringParameterError, run_clustering
 from .db import create_db_engine
 from .ingestion import load_patients
 from .ingestion.importer import import_patients
+from .knowledge_base import document_json, search_knowledge, seed_chinese_knowledge_base
 from .models import (
     ClusteringResult,
     ClusteringRun,
     CaseEvent,
     DataBatch,
     LocationSource,
+    KnowledgeDocument,
     Patient,
     PatientLocation,
 )
@@ -118,6 +120,45 @@ def list_runs() -> list[dict]:
 @app.get("/api/cities")
 def cities() -> list[dict]:
     return [{"id": city_id, **config} for city_id, config in CITY_CONFIG.items()]
+
+
+@app.get("/api/knowledge")
+def knowledge_documents(query: str | None = None, disease: str | None = None,
+                        include_inactive: bool = False) -> list[dict]:
+    engine = create_db_engine()
+    try:
+        with Session(engine) as session:
+            return [document_json(item) for item in search_knowledge(
+                session, query=query, disease=disease, include_inactive=include_inactive
+            )]
+    finally:
+        engine.dispose()
+
+
+@app.get("/api/knowledge/{document_id}")
+def knowledge_document(document_id: int) -> dict:
+    engine = create_db_engine()
+    try:
+        with Session(engine) as session:
+            document = session.get(KnowledgeDocument, document_id)
+            if document is None:
+                raise HTTPException(404, "知识文档不存在")
+            return document_json(document)
+    finally:
+        engine.dispose()
+
+
+@app.post("/api/knowledge/seed")
+def seed_knowledge() -> dict:
+    engine = create_db_engine()
+    try:
+        with Session(engine) as session:
+            created = seed_chinese_knowledge_base(session)
+            session.commit()
+            total = session.scalar(select(func.count()).select_from(KnowledgeDocument))
+            return {"created_count": created, "total_count": total}
+    finally:
+        engine.dispose()
 
 
 async def _validated_patient_upload(file: UploadFile):
@@ -257,7 +298,7 @@ def results(
                 "sex": row.ClusteringResult.sex_snapshot,
                 "age_years": row.ClusteringResult.age_years_snapshot,
                 "cluster_id": row.ClusteringResult.cluster_id,
-                "cluster_label": "Noise" if row.ClusteringResult.cluster_id is None else f"Cluster {row.ClusteringResult.cluster_id}",
+                "cluster_label": "噪声" if row.ClusteringResult.cluster_id is None else f"聚类 {row.ClusteringResult.cluster_id}",
                 "color": disease_color(row.ClusteringResult.illness_snapshot),
                 "location_source": row.ClusteringResult.location_source_snapshot.value,
                 "is_proxy": row.ClusteringResult.is_proxy_snapshot,

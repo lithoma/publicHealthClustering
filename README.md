@@ -17,6 +17,7 @@ not yet geocode free-text addresses or generate AI prevention strategies.
 - China city navigation and appropriate projected SRID defaults
 - Interactive cluster areas, case markers, noise, proxies, disease filters, and data table
 - Per-cluster descriptive statistics, compact charts, and standalone HTML reports
+- Versioned Chinese disease-prevention knowledge with official source links
 - Alembic-managed schema evolution
 
 ## Prerequisites
@@ -56,7 +57,8 @@ Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/). The dashboard provides:
 
 - `聚集地图`: interactive map and disease filters
 - `数据`: persisted case-level results for the selected run
-- `Cluster 报告`: one descriptive report per cluster
+- `聚类报告`: one Chinese descriptive report per cluster
+- `防控知识库`: searchable Chinese guidance summaries and official sources
 - `导入数据`: CSV preview and confirmed batch import
 
 If the database is empty, select Guangzhou and load its synthetic demo. The
@@ -102,7 +104,7 @@ immutable result snapshots; viewing or reporting never reruns DBSCAN.
 
 ## Cluster reports
 
-The `Cluster 报告` tab summarizes every non-noise cluster in a completed run:
+The `聚类报告` tab presents a Chinese summary for every non-noise cluster in a completed run:
 
 - Case and proxy counts
 - First/last diagnosis date and active-day span
@@ -126,6 +128,25 @@ be opened in a new tab, downloaded, or printed to PDF from the browser.
 Clicking a translucent cluster region opens a popup with a direct link to that
 cluster's full report.
 
+## Chinese disease knowledge base
+
+The `防控知识库` tab searches a local, versioned collection of Chinese disease
+guidance. Initial content covers 麻疹、百日咳、流感 and is organized into concise
+operational sections. Each document records its issuing body, publication date,
+jurisdiction, version, lifecycle status, and official source URL. Search matches
+Chinese titles, diseases, issuers, section content, and curated keywords; a
+disease selector narrows the result set.
+
+Apply migrations and load the idempotent initial collection through the local API:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/knowledge/seed
+```
+
+These summaries support evidence retrieval and must be checked against the linked
+official text. They do not replace clinical judgment, reporting obligations, or
+local response procedures.
+
 ## Tests
 
 Start the local PostGIS service, then run:
@@ -146,6 +167,7 @@ src/public_health_clustering/
   dashboard.py           FastAPI dashboard and local APIs
   ingestion/             CSV parsing, validation, and import
   location_resolution.py community/facility location resolution
+  knowledge_base.py      versioned Chinese knowledge retrieval and seed content
   models.py              SQLAlchemy ORM models
   reporting.py           deterministic cluster statistics and HTML reports
   visualization.py       standalone Folium run maps
@@ -161,7 +183,8 @@ tests/                    unit and live-PostGIS integration tests
 - No direct longitude/latitude fields in the dashboard patient uploader
 - No authentication or deployment hardening; the dashboard is local only
 - No SaTScan, forecasting, prediction, or automatic intervention execution
-- Local prevention knowledge base and evidence-grounded strategy agent are planned after reporting
+- No semantic ranking or PDF page-level citations in knowledge search yet
+- Evidence-grounded prevention strategy generation begins in Milestone 7C
 
 See `ROADMAP.md`, `PROJECT_LOG.md`, and `ARCHITECTURE_DECISIONS.md` for milestone
 status, validation history, and long-lived design decisions.
