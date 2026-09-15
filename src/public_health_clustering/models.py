@@ -147,6 +147,22 @@ class Community(Base):
     )
 
 
+class DataBatch(Base):
+    __tablename__ = "data_batches"
+
+    batch_id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    batch_name: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    source_name: Mapped[str | None] = mapped_column(Text)
+    is_synthetic: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False,
+                                                server_default=text("false"))
+    is_included: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True,
+                                               server_default=text("true"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False
+    )
+    patients: Mapped[list["Patient"]] = relationship(back_populates="batch")
+
+
 class Patient(Base):
     __tablename__ = "patients"
     __table_args__ = (Index("patients_diagnosis_illness_idx", "diagnosis_date", "illness"),)
@@ -163,6 +179,9 @@ class Patient(Base):
             "healthcare_facilities.facility_id", onupdate="CASCADE", ondelete="SET NULL"
         ),
     )
+    batch_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("data_batches.batch_id", onupdate="CASCADE", ondelete="RESTRICT")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False
     )
@@ -173,6 +192,7 @@ class Patient(Base):
     diagnosing_facility: Mapped[HealthcareFacility | None] = relationship(
         back_populates="diagnosed_patients"
     )
+    batch: Mapped[DataBatch | None] = relationship(back_populates="patients")
     locations: Mapped[list["PatientLocation"]] = relationship(
         back_populates="patient", passive_deletes=True
     )
@@ -294,6 +314,7 @@ class ClusteringRun(Base):
     include_proxy_locations: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default=text("true")
     )
+    included_batch_ids: Mapped[str | None] = mapped_column(Text)
     status: Mapped[ClusteringRunStatus] = mapped_column(
         StrEnumText(ClusteringRunStatus),
         nullable=False,

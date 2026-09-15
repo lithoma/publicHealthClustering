@@ -118,6 +118,8 @@ diagnosis date later changes.
 from __future__ import annotations
 
 import re
+import json
+from collections.abc import Sequence
 from datetime import date, datetime, time, timedelta, timezone
 
 from geoalchemy2 import Geometry
@@ -159,6 +161,8 @@ current_patient_spatial_points = Table(
     Column("community_id", BigInteger),
     Column("facility_id", BigInteger),
     Column("resolved_at", DateTime(timezone=True)),
+    Column("batch_id", BigInteger),
+    Column("batch_is_included", Boolean),
 )
 
 spatial_ref_sys = Table(
@@ -249,6 +253,7 @@ def run_clustering(
     window_days: int = 7,
     illness_filter: str | None = None,
     include_proxy_locations: bool = True,
+    batch_ids: Sequence[int] | None = None,
     engine: Engine | None = None,
 ) -> ClusteringRun:
     """Run one reproducible DBSCAN clustering pass and record it.
@@ -284,6 +289,7 @@ def run_clustering(
             target_srid=target_srid,
             illness_filter=illness_filter,
             include_proxy_locations=include_proxy_locations,
+            included_batch_ids=json.dumps(list(batch_ids)) if batch_ids is not None else None,
             status=ClusteringRunStatus.PENDING,
         )
         session.add(run)
@@ -309,7 +315,10 @@ def run_clustering(
             filters = [
                 cpsp.c.diagnosis_date >= window_start_date,
                 cpsp.c.diagnosis_date < window_end_date,
+                cpsp.c.batch_is_included.is_(True),
             ]
+            if batch_ids is not None:
+                filters.append(cpsp.c.batch_id.in_(list(batch_ids)))
             if illness_filter is not None:
                 filters.append(cpsp.c.illness == illness_filter)
             if not include_proxy_locations:
