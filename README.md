@@ -177,8 +177,17 @@ OPENROUTER_MODEL=openrouter/free
 Restart the dashboard after changing `.env`. Requests require structured-output
 support and denied provider data collection. Strict zero-data-retention is not
 required because the free pool may have no compatible endpoint; only de-identified
-aggregate context is transmitted. Free routing has low limits and variable availability; a failed compatible provider
-request is reported clearly and does not fall back to template text.
+aggregate context is transmitted. Free routing has low limits and variable
+availability; a failed compatible-provider request is reported clearly and does
+not fall back to template text.
+
+The live Milestone 7D check successfully generated a Guangzhou 麻疹 strategy
+through a free model with all required structured sections and valid knowledge
+references. It also demonstrated why evaluation is required: a 24-case cluster
+was labelled `常规关注`, which may be insufficiently cautious. The next milestone
+therefore treats severity calibration, unsupported recommendations, citation
+quality, and cross-model consistency as release criteria rather than cosmetic
+prompt tuning.
 
 ## Tests
 
@@ -203,7 +212,7 @@ src/public_health_clustering/
   knowledge_base.py      versioned Chinese knowledge retrieval and seed content
   models.py              SQLAlchemy ORM models
   reporting.py           deterministic cluster statistics and HTML reports
-  strategy.py            cited Chinese prevention-strategy assembly
+  strategy.py            model agent context, provider call, and citation validation
   visualization.py       standalone Folium run maps
   web/dashboard.html     local dashboard interface
 migrations/              Alembic migrations

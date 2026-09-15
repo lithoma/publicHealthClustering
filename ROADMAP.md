@@ -62,6 +62,8 @@ tests, `PROJECT_LOG.md`, `ARCHITECTURE_DECISIONS.md`, this roadmap, and
 - Broader national, provincial, and municipal guidance corpus
 - Page/paragraph-level citations and supersession workflows
 - Unsupported-claim, consistency, safety, and expert-quality evaluations
+- Severity calibration tests, including clustered-case escalation scenarios
+- Cross-model comparison and minimum acceptable response-quality thresholds
 - Resource capacity, vaccination, severity, and population-denominator inputs
 
 ## Later work ⬜

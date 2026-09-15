@@ -2,7 +2,7 @@
 
 ## Current Status (as of 2026-09-15)
 
-Milestones 1 through 6 and Milestone 7A are complete. The project has:
+Milestones 1 through 7D are complete. The project has:
 
 - A local PostgreSQL/PostGIS environment and the full database schema (`sql/schema.sql`).
 - A Python package with configuration loading, DB engine/session factories, and a health check.
@@ -13,6 +13,8 @@ Milestones 1 through 6 and Milestone 7A are complete. The project has:
 - Reproducible PostGIS DBSCAN clustering over current resolved patient locations, partitioned by illness and recorded as immutable run snapshots.
 - A local interactive map, managed/versioned data batches, and China city navigation.
 - Deterministic per-cluster descriptive reports with charts and standalone HTML export.
+- A versioned Chinese disease knowledge base with official source links.
+- A model-driven Chinese prevention-strategy agent using de-identified aggregate context.
 
 No geocoding or fuzzy matching of patient addresses exists yet — only exact
 community-name matching and facility fallback. No real patient data has been
@@ -20,7 +22,8 @@ used anywhere — all sample and test data is synthetic.
 
 ## Next Milestone
 
-Milestone 7B: versioned local prevention knowledge base.
+Milestone 7E: expand the knowledge corpus and evaluate agent severity
+calibration, citation support, consistency, safety, and expert usefulness.
 
 ---
 

@@ -183,14 +183,15 @@ Initial entries are concise Chinese summaries linked to current official source
 documents. They are not copied wholesale and do not replace the official text,
 clinical judgment, statutory reporting duties, or local response procedures.
 The UI exposes the source link and status so users can verify currency.
-## Strategy generation starts with a deterministic evidence contract
+
+## Strategy generation uses a deterministic evidence contract
 
 The strategy workflow first constructs a typed context from one immutable
 cluster report and current disease-matched knowledge sections. Its baseline
-output is deterministic: assessment, prioritized actions, limitations,
-escalation criteria, and source-backed evidence. This provides useful behavior
-without a cloud credential and creates a stable contract for later model
-refinement and evaluation.
+context is deterministic, while assessment, prioritized actions, limitations,
+escalation criteria, and reasoning are produced by the required model call.
+This stable contract makes model outputs testable and keeps factual calculation
+outside the model; it is not a user-facing rules-based fallback.
 
 ## Strategy context excludes direct identifiers and exact coordinates
 
