@@ -2,10 +2,12 @@
 
 A local Python, FastAPI, PostgreSQL, and PostGIS application for importing
 case batches, running reproducible disease-specific DBSCAN analyses, exploring
-results on an interactive map, and generating deterministic cluster reports.
+results on an interactive map, generating Chinese cluster reports and prevention
+briefs, and evaluating auditable seven-day spatial forecasts.
 
 All repository samples and dashboard demos are synthetic. The application does
-not yet geocode free-text addresses or generate AI prevention strategies.
+not yet geocode free-text addresses, and no current forecast is validated for
+operational public-health use.
 
 ## Current capabilities
 
@@ -20,6 +22,7 @@ not yet geocode free-text addresses or generate AI prevention strategies.
 - Versioned Chinese disease-prevention knowledge with official source links
 - Automatic Chinese cluster strategy briefs with section-level evidence references
 - Persisted, training-free seven-day grid forecasts shared across diseases
+- Frozen prediction cohorts and rolling historical forecast evaluation
 - Alembic-managed schema evolution
 
 ## Prerequisites
@@ -61,8 +64,8 @@ Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/). The dashboard provides:
 - `数据`: persisted case-level results for the selected run
 - `聚类报告`: one Chinese descriptive report per cluster
 - `防控知识库`: searchable Chinese guidance summaries and official sources
-- `聚类报告`: generate an evidence-grounded prevention strategy for any cluster
-- `七日预测`: generate an isolated unvalidated spatial forecast on demand
+- `防控策略`: generate an evidence-grounded prevention strategy for any cluster
+- `七日预测`: generate an isolated forecast or run rolling historical evaluation
 - `导入数据`: CSV preview and confirmed batch import
 
 If the database is empty, select Guangzhou and load its synthetic demo. The
@@ -201,9 +204,17 @@ while the calculation uses recent 7-day counts, the preceding week, older
 defaults to 1 km and uses the city selector's projected SRID.
 
 Every run stores its cutoff, horizon, grid, feature/model versions, parameters,
-runtime and validation status. Every cell stores the feature snapshot, expected
-count, uncertainty range and WGS84 polygon used by the map. Prediction data is
-separate from clustering and does not modify existing analysis or reports.
+runtime, validation status, proxy policy, and immutable batch identity snapshots.
+Every cell stores the feature snapshot, expected count, uncertainty range and
+WGS84 polygon used by the map. Prediction data is separate from clustering and
+does not modify existing analysis or reports.
+
+The same screen can run leakage-safe rolling historical backtests. Each historical
+cutoff uses only the preceding data, attaches cases observed in the following
+half-open seven-day interval, and records MAE, RMSE, interval score, interval
+coverage, hotspot recall, and cases occurring outside forecasted cells. An
+evaluation is immutable and never changes `SIMULATION_UNVALIDATED` into a claim
+that the model is ready for operational use.
 
 All current results are labelled `SIMULATION_UNVALIDATED`. The fixed weights and
 intervals are initial software assumptions, not claims of epidemiological
@@ -221,7 +232,8 @@ Start the local PostGIS service, then run:
 
 The integration fixtures truncate the application's local tables before and
 after tests. Do not point the test configuration at a database containing data
-you need to retain. Reload the synthetic dashboard demo after a full test run.
+you need to retain. The current suite contains 105 passing tests. Reload the
+synthetic dashboard demo after a full test run.
 
 ## Project structure
 
@@ -248,7 +260,8 @@ tests/                    unit and live-PostGIS integration tests
 - No address geocoding or fuzzy location matching
 - No direct longitude/latitude fields in the dashboard patient uploader
 - No authentication or deployment hardening; the dashboard is local only
-- No SaTScan, forecasting, prediction, or automatic intervention execution
+- No SaTScan statistical alarm layer or automatic intervention execution
+- No trained or operationally validated prediction model yet
 - No semantic ranking or PDF page-level citations in knowledge search yet
 - Free model routing is prototype capacity, not a production availability guarantee
 - Agent quality evaluation and broader local guidance remain planned

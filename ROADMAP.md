@@ -1,6 +1,6 @@
 # Roadmap
 
-Milestone status as of 2026-09-15. A milestone is complete only after code,
+Milestone status as of 2026-10-20. A milestone is complete only after code,
 tests, `PROJECT_LOG.md`, `ARCHITECTURE_DECISIONS.md`, this roadmap, and
 `README.md` are updated and the result is committed to Git.
 
@@ -75,9 +75,18 @@ tests, `PROJECT_LOG.md`, `ARCHITECTURE_DECISIONS.md`, this roadmap, and
 - Optional `七日预测` dashboard map isolated from current features
 - Explicit `SIMULATION_UNVALIDATED` status and full regression coverage
 
-## Milestone 8B — Real-data calibration and model comparison ⬜
+## Milestone 8B-1 — Reproducible forecast evaluation ✅
 
-- Rolling-origin historical backtests and observed-outcome attachment
+- Immutable prediction batch snapshots and proxy policy
+- Shared metre-based SRID validation with clustering
+- Observed-outcome attachment after a forecast window closes
+- Leakage-safe rolling-origin historical backtests
+- MAE, RMSE, interval score/coverage, hotspot recall, and unseen-cell counts
+- Dashboard evaluation controls and model-neutral persisted evaluation records
+- Batch-deletion protection for prediction audit history
+
+## Milestone 8B-2 — Real-data calibration and model comparison ⬜
+
 - Calibrated shared baseline weights and prediction intervals
 - Negative-binomial count model as the first statistical challenger
 - LightGBM/XGBoost challenger only when sample volume supports it
@@ -88,6 +97,6 @@ tests, `PROJECT_LOG.md`, `ARCHITECTURE_DECISIONS.md`, this roadmap, and
 - Building/street-level geocoding and coordinate import
 - Disease-specific clustering parameter profiles
 - Temporal cluster comparison and playback
-- SaTScan and prediction only when explicitly scheduled
+- Prospective SaTScan significance and alarm layer
 
 Do not begin a milestone until explicitly requested.

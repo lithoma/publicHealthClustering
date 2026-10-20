@@ -252,3 +252,35 @@ surface and emit the same persisted grid forecast shape. LightGBM/XGBoost are
 challengers, not assumed public-health standards. Promotion requires rolling
 time-based backtesting, uncertainty calibration, and performance reporting by
 disease and geography; random train/test splits are not acceptable.
+
+## Prediction input cohorts are immutable audit data
+
+A forecast now snapshots every included batch ID and name plus its proxy-location
+policy. Historical evaluation reuses that frozen cohort even if a batch is later
+excluded, and batch deletion is blocked while prediction history references it.
+This closes the gap between persisting model output and being able to explain
+exactly which records were eligible when that output was produced.
+
+## Forecast evaluation is rolling-origin, outcome-based, and immutable
+
+The seven-day target is the half-open interval `[forecast_start, forecast_end)`.
+An evaluation is allowed only once that interval has closed, attaches observed
+counts to forecast cells, separately counts outcomes in cells the model did not
+forecast, and cannot later be overwritten with a different data-completeness
+date. Rolling historical cutoffs must use only information available before each
+cutoff. Random train/test splits remain prohibited because they leak future time
+structure into model development.
+
+The initial score set includes point accuracy, interval quality, and spatial
+prioritization: MAE, RMSE, mean interval score, interval coverage, top-k hotspot
+recall, and observed cases outside forecast cells. No score changes the model's
+`SIMULATION_UNVALIDATED` status; promotion requires representative real data and
+explicit comparison against simple baselines.
+
+## SaTScan will complement, not replace, clustering or prediction
+
+DBSCAN remains a descriptive density partition, prediction estimates future
+counts, and a future prospective SaTScan adapter will assess whether space-time
+concentrations are statistically unusual. SaTScan results must use separate run
+and alarm tables and appear as an optional map layer rather than rewriting
+DBSCAN clusters or forecast cells.

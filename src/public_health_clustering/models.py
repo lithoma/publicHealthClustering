@@ -519,14 +519,24 @@ class PredictionRun(Base):
     validation_status: Mapped[str] = mapped_column(Text, nullable=False)
     parameters_json: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'COMPLETED'"))
+    include_proxy_locations: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("true")
+    )
     runtime_ms: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False)
     results: Mapped[list["PredictionResult"]] = relationship(back_populates="run", passive_deletes=True)
+    batch_snapshots: Mapped[list["PredictionRunBatch"]] = relationship(
+        back_populates="run", cascade="all, delete-orphan", passive_deletes=True
+    )
+    evaluation: Mapped["PredictionEvaluation | None"] = relationship(
+        back_populates="run", cascade="all, delete-orphan", passive_deletes=True,
+        uselist=False,
+    )
 
 
 class PredictionResult(Base):
     __tablename__ = "prediction_results"
-    __table_args__ = (UniqueConstraint("prediction_run_id", "disease", "cell_x", "cell_y", name="prediction_results_run_disease_cell_unique"), CheckConstraint("expected_cases >= 0 AND lower_bound >= 0 AND upper_bound >= lower_bound"), Index("prediction_results_run_idx", "prediction_run_id"), Index("prediction_results_cell_gix", "cell_geometry", postgresql_using="gist"))
+    __table_args__ = (UniqueConstraint("prediction_run_id", "disease", "cell_x", "cell_y", name="prediction_results_run_disease_cell_unique"), CheckConstraint("expected_cases >= 0 AND lower_bound >= 0 AND upper_bound >= lower_bound"), CheckConstraint("observed_cases IS NULL OR observed_cases >= 0"), Index("prediction_results_run_idx", "prediction_run_id"), Index("prediction_results_cell_gix", "cell_geometry", postgresql_using="gist"))
     prediction_result_id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     prediction_run_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("prediction_runs.prediction_run_id", onupdate="CASCADE", ondelete="CASCADE"), nullable=False)
     disease: Mapped[str] = mapped_column(Text, nullable=False)
@@ -538,4 +548,61 @@ class PredictionResult(Base):
     upper_bound: Mapped[float] = mapped_column(Double, nullable=False)
     information_level: Mapped[str] = mapped_column(Text, nullable=False)
     features_json: Mapped[str] = mapped_column(Text, nullable=False)
+    observed_cases: Mapped[int | None] = mapped_column(Integer)
     run: Mapped[PredictionRun] = relationship(back_populates="results")
+
+
+class PredictionRunBatch(Base):
+    """Immutable batch identity used to construct one prediction run."""
+
+    __tablename__ = "prediction_run_batches"
+    __table_args__ = (Index("prediction_run_batches_batch_idx", "batch_id_snapshot"),)
+
+    prediction_run_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("prediction_runs.prediction_run_id", onupdate="CASCADE", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    batch_id_snapshot: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    batch_name_snapshot: Mapped[str] = mapped_column(Text, nullable=False)
+    run: Mapped[PredictionRun] = relationship(back_populates="batch_snapshots")
+
+
+class PredictionEvaluation(Base):
+    """Observed-outcome scores for one completed historical prediction."""
+
+    __tablename__ = "prediction_evaluations"
+    __table_args__ = (
+        CheckConstraint("forecast_cell_count >= 0"),
+        CheckConstraint("observed_cases_in_cells >= 0"),
+        CheckConstraint("observed_cases_outside_cells >= 0"),
+        CheckConstraint("interval_coverage IS NULL OR interval_coverage BETWEEN 0 AND 1"),
+        CheckConstraint("hotspot_k IS NULL OR hotspot_k > 0"),
+        CheckConstraint("hotspot_recall IS NULL OR hotspot_recall BETWEEN 0 AND 1"),
+        Index("prediction_evaluations_run_idx", "prediction_run_id"),
+    )
+
+    prediction_evaluation_id: Mapped[int] = mapped_column(
+        BigInteger, Identity(), primary_key=True
+    )
+    prediction_run_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("prediction_runs.prediction_run_id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    as_of_date: Mapped[date] = mapped_column(Date, nullable=False)
+    evaluated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False
+    )
+    forecast_cell_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    observed_cases_in_cells: Mapped[int] = mapped_column(Integer, nullable=False)
+    observed_cases_outside_cells: Mapped[int] = mapped_column(Integer, nullable=False)
+    mae: Mapped[float | None] = mapped_column(Double)
+    rmse: Mapped[float | None] = mapped_column(Double)
+    mean_interval_score: Mapped[float | None] = mapped_column(Double)
+    interval_coverage: Mapped[float | None] = mapped_column(Double)
+    hotspot_k: Mapped[int | None] = mapped_column(Integer)
+    hotspot_recall: Mapped[float | None] = mapped_column(Double)
+    metrics_json: Mapped[str] = mapped_column(Text, nullable=False)
+    run: Mapped[PredictionRun] = relationship(back_populates="evaluation")

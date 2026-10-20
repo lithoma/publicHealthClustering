@@ -30,10 +30,19 @@ from .models import (
     KnowledgeDocument,
     Patient,
     PatientLocation,
+    PredictionRun,
+    PredictionRunBatch,
 )
 from .reporting import ClusterReportError, build_cluster_reports, render_cluster_report_html
 from .strategy import StrategyError, build_strategy_context, generate_strategy_brief
-from .prediction import create_prediction, prediction_json
+from .prediction import (
+    PredictionError,
+    create_prediction,
+    evaluate_prediction_run,
+    evaluation_json,
+    prediction_json,
+    run_backtest,
+)
 
 PACKAGE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="Public Health Clustering Explorer")
@@ -92,6 +101,23 @@ class PredictionRequest(BaseModel):
     cutoff_date: date
     target_srid: int = Field(gt=0)
     grid_size_meters: int = Field(1000, gt=0)
+    batch_ids: list[int] | None = None
+    include_proxy_locations: bool = True
+
+
+class PredictionEvaluationRequest(BaseModel):
+    as_of_date: date
+
+
+class PredictionBacktestRequest(BaseModel):
+    start_cutoff: date
+    end_cutoff: date
+    as_of_date: date
+    target_srid: int = Field(gt=0)
+    grid_size_meters: int = Field(1000, gt=0)
+    step_days: int = Field(7, gt=0)
+    batch_ids: list[int] | None = None
+    include_proxy_locations: bool = True
 
 
 def _run_json(run: ClusteringRun) -> dict:
@@ -128,9 +154,8 @@ def list_predictions() -> list[dict]:
     engine=create_db_engine()
     try:
         with Session(engine) as session:
-            from .models import PredictionRun
             rows=session.scalars(select(PredictionRun).order_by(PredictionRun.prediction_run_id.desc())).all()
-            return [{"prediction_run_id":r.prediction_run_id,"cutoff_date":r.cutoff_date.isoformat(),"forecast_start":r.forecast_start.isoformat(),"forecast_end":r.forecast_end.isoformat(),"validation_status":r.validation_status,"model_type":r.model_type} for r in rows]
+            return [{"prediction_run_id":r.prediction_run_id,"cutoff_date":r.cutoff_date.isoformat(),"forecast_start":r.forecast_start.isoformat(),"forecast_end":r.forecast_end.isoformat(),"validation_status":r.validation_status,"model_type":r.model_type,"evaluated":r.evaluation is not None} for r in rows]
     finally: engine.dispose()
 
 @app.post("/api/predictions")
@@ -138,8 +163,52 @@ def run_prediction(request: PredictionRequest) -> dict:
     engine=create_db_engine()
     try:
         with Session(engine) as session:
-            run=create_prediction(session,cutoff_date=request.cutoff_date,target_srid=request.target_srid,grid_size_meters=request.grid_size_meters)
-            return prediction_json(session,run.prediction_run_id)
+            try:
+                run=create_prediction(session,cutoff_date=request.cutoff_date,target_srid=request.target_srid,grid_size_meters=request.grid_size_meters,batch_ids=request.batch_ids,include_proxy_locations=request.include_proxy_locations)
+                return prediction_json(session,run.prediction_run_id)
+            except PredictionError as exc:
+                raise HTTPException(400,str(exc)) from exc
+    finally: engine.dispose()
+
+
+@app.post("/api/predictions/backtest")
+def prediction_backtest(request: PredictionBacktestRequest) -> dict:
+    engine=create_db_engine()
+    try:
+        with Session(engine) as session:
+            try:
+                rows=run_backtest(session,start_cutoff=request.start_cutoff,end_cutoff=request.end_cutoff,as_of_date=request.as_of_date,target_srid=request.target_srid,grid_size_meters=request.grid_size_meters,step_days=request.step_days,batch_ids=request.batch_ids,include_proxy_locations=request.include_proxy_locations)
+            except PredictionError as exc:
+                raise HTTPException(400,str(exc)) from exc
+            mae=[row["mae"] for row in rows if row["mae"] is not None]
+            coverage=[row["interval_coverage"] for row in rows if row["interval_coverage"] is not None]
+            return {"runs":rows,"summary":{"run_count":len(rows),"mean_mae":round(sum(mae)/len(mae),6) if mae else None,"mean_interval_coverage":round(sum(coverage)/len(coverage),6) if coverage else None,"observed_outside_forecast_cells":sum(row["observed_cases_outside_cells"] for row in rows)}}
+    finally: engine.dispose()
+
+
+@app.post("/api/predictions/{run_id}/evaluation")
+def evaluate_prediction(run_id: int, request: PredictionEvaluationRequest) -> dict:
+    engine=create_db_engine()
+    try:
+        with Session(engine) as session:
+            try:
+                evaluate_prediction_run(session,run_id,as_of_date=request.as_of_date)
+                return evaluation_json(session,run_id)
+            except PredictionError as exc:
+                status=404 if "不存在" in str(exc) else 409
+                raise HTTPException(status,str(exc)) from exc
+    finally: engine.dispose()
+
+
+@app.get("/api/predictions/{run_id}/evaluation")
+def get_prediction_evaluation(run_id: int) -> dict:
+    engine=create_db_engine()
+    try:
+        with Session(engine) as session:
+            try: return evaluation_json(session,run_id)
+            except PredictionError as exc:
+                status=404 if "不存在" in str(exc) else 409
+                raise HTTPException(status,str(exc)) from exc
     finally: engine.dispose()
 
 @app.get("/api/predictions/{run_id}")
@@ -148,7 +217,7 @@ def get_prediction(run_id: int) -> dict:
     try:
         with Session(engine) as session:
             try: return prediction_json(session,run_id)
-            except ValueError as exc: raise HTTPException(404,str(exc)) from exc
+            except PredictionError as exc: raise HTTPException(404,str(exc)) from exc
     finally: engine.dispose()
 
 
@@ -288,6 +357,13 @@ def delete_batch(batch_id: int) -> dict:
             ))
             if dependent:
                 raise HTTPException(409, "该批次已被分析运行引用；请保留审计历史或先删除相关运行。")
+            prediction_dependent = session.scalar(
+                select(func.count()).select_from(PredictionRunBatch).where(
+                    PredictionRunBatch.batch_id_snapshot == batch_id
+                )
+            )
+            if prediction_dependent:
+                raise HTTPException(409, "该批次已被预测运行引用；请保留预测审计历史。")
             count = session.scalar(select(func.count()).select_from(CaseEvent).where(CaseEvent.batch_id == batch_id))
             patient_ids = list(session.scalars(select(CaseEvent.patient_id).where(CaseEvent.batch_id == batch_id)))
             session.query(CaseEvent).filter(CaseEvent.batch_id == batch_id).delete(synchronize_session=False)

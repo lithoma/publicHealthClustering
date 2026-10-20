@@ -272,3 +272,40 @@ weather, mobility, severity, and interventions are not yet modeled.
 baseline and compare it with negative-binomial regression and boosted-tree
 challengers. Promote no model until it beats simple baselines by disease,
 geography, horizon, and uncertainty calibration.
+
+### 2026-10-20 — Milestone 8B-1: Reproducible forecast evaluation
+
+**Implemented:** Prediction runs now snapshot their exact included batches and
+proxy-location policy, use the clustering subsystem's projected metre-based SRID
+validation, and protect referenced batches from deletion. Added immutable
+observed-outcome attachment for closed seven-day windows and leakage-safe rolling
+historical backtests. Persisted evaluations report MAE, RMSE, mean interval score,
+95% interval coverage, top-k hotspot recall, observed cases inside forecast cells,
+and cases appearing in cells the baseline did not forecast. The prediction screen
+now exposes a Chinese historical-evaluation panel without changing clustering,
+reports, knowledge, or strategy behavior.
+
+**Architecture:** Forecast and outcome intervals are explicitly half-open.
+Changing current batch inclusion does not change the cohort used for a saved
+evaluation. Evaluation records are immutable and do not promote the existing
+`SIMULATION_UNVALIDATED` baseline. SaTScan remains a future complementary alarm
+layer rather than a replacement for either DBSCAN or forecasting.
+
+**Validation:** A fresh, isolated PostGIS 17 / PostGIS 3.5 Docker volume was used,
+so the user's normal database was untouched. The migration from `20260915_04` to
+`20261020_05` was applied and its new table/column verified. Focused prediction
+suite: 8/8 passed. Full suite: 105/105 passed with the existing Starlette
+`TestClient` deprecation warning. Live API and browser checks generated a forecast,
+ran a two-cutoff backtest, rendered the evaluation UI, and demonstrated detection
+of actual cases outside the forecasted grid cells.
+
+**Limitations:** The model weights and interval formula remain uncalibrated. A
+batch cohort is frozen, but later corrections to a case's current location before
+first evaluation can still affect its attached outcome cell. The baseline still
+forecasts only cells active during its 28-day history and does not yet correct
+reporting delay or use population denominators.
+
+**Next:** Add direct longitude/latitude import for real-data readiness, then use
+representative real longitudinal data to compare naive baselines with a shared
+negative-binomial count model. Add SaTScan after the evaluation/data contract is
+stable; defer boosted trees until data volume and rolling backtests justify them.
